@@ -16,8 +16,6 @@ The Library Management System is a Java-based backend application that follows t
 - **[Caching Strategy](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/http/CacheControl.html)**: Improves efficiency by using HTTP caching, reducing redundant requests, and optimizing client-server interactions.
 - **[Hypermedia Principle](https://spring.io/guides/gs/rest-hateoas)**: REST API usability by providing navigable links between resources.
 
-
-
 ## Setup Instructions
 
 ### Prerequisites
@@ -49,17 +47,8 @@ mvn verify
  ```bash
 mvn -f pom-docker.xml verify
 ```
-## Quick Guide: Library Management System Overview (German)
-https://github.com/user-attachments/assets/a1c67f63-c21c-4727-a8f5-aa32ec804d40
-
-Link for the video: [libMS](https://github.com/user-attachments/assets/a1c67f63-c21c-4727-a8f5-aa32ec804d40)
 
 ## License ⚖️
 
 This project is licensed under the MIT License. For more details, please refer to the file: [LICENSE](LICENSE).
-
-## Authors 👨‍💻👩‍💻
-
-*   Kristian Popov
-*   Enrico Ebert
 
