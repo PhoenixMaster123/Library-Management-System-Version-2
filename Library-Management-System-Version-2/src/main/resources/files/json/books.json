@@ -1,0 +1,112 @@
+[
+  {
+    "title": "The Great Gatsby",
+    "isbn": "9780743273565",
+    "publicationYear": 1925,
+    "authors": [
+      {
+        "name": "F. Scott Fitzgerald",
+        "bio": "An American novelist."
+      }
+    ]
+  },
+  {
+    "title": "To Kill a Mockingbird",
+    "isbn": "9780061120084",
+    "publicationYear": 1960,
+    "authors": [
+      {
+        "name": "Harper Lee",
+        "bio": "An American novelist best known for 'To Kill a Mockingbird'."
+      }
+    ]
+  },
+  {
+    "title": "1984",
+    "isbn": "9780451524935",
+    "publicationYear": 1949,
+    "authors": [
+      {
+        "name": "George Orwell",
+        "bio": "British writer and journalist."
+      }
+    ]
+  },
+  {
+    "title": "Moby Dick",
+    "isbn": "9780142437247",
+    "publicationYear": 1851,
+    "authors": [
+      {
+        "name": "Herman Melville",
+        "bio": "An American novelist and poet."
+      }
+    ]
+  },
+  {
+    "title": "War and Peace",
+    "isbn": "9780199232765",
+    "publicationYear": 1869,
+    "authors": [
+      {
+        "name": "Leo Tolstoy",
+        "bio": "A Russian writer and philosopher."
+      }
+    ]
+  },
+  {
+    "title": "Pride and Prejudice",
+    "isbn": "9780141439518",
+    "publicationYear": 1813,
+    "authors": [
+      {
+        "name": "Jane Austen",
+        "bio": "An English novelist known for her romantic fiction."
+      }
+    ]
+  },
+  {
+    "title": "The Catcher in the Rye",
+    "isbn": "9780316769488",
+    "publicationYear": 1951,
+    "authors": [
+      {
+        "name": "J.D. Salinger",
+        "bio": "An American writer."
+      }
+    ]
+  },
+  {
+    "title": "The Hobbit",
+    "isbn": "9780261102217",
+    "publicationYear": 1937,
+    "authors": [
+      {
+        "name": "J.R.R. Tolkien",
+        "bio": "An English writer, poet, and academic."
+      }
+    ]
+  },
+  {
+    "title": "The Divine Comedy",
+    "isbn": "9780199535645",
+    "publicationYear": 1320,
+    "authors": [
+      {
+        "name": "Dante Alighieri",
+        "bio": "An Italian poet, writer, and philosopher."
+      }
+    ]
+  },
+  {
+    "title": "The Odyssey",
+    "isbn": "9780140268867",
+    "publicationYear": -800,
+    "authors": [
+      {
+        "name": "Homer",
+        "bio": "Ancient Greek poet."
+      }
+    ]
+  }
+]

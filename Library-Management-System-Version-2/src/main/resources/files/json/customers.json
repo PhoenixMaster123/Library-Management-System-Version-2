@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Alice Smith",
+    "email": "alice.smith@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Bob Johnson",
+    "email": "bob.johnson@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Charlie Brown",
+    "email": "charlie.brown@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Diana Prince",
+    "email": "diana.prince@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Ethan Hunt",
+    "email": "ethan.hunt@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Fiona Gallagher",
+    "email": "fiona.gallagher@example.com",
+    "isActive": true
+  },
+  {
+    "name": "George Bailey",
+    "email": "george.bailey@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Hannah Abbott",
+    "email": "hannah.abbott@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Ivan Drago",
+    "email": "ivan.drago@example.com",
+    "isActive": true
+  },
+  {
+    "name": "Julia Roberts",
+    "email": "julia.roberts@example.com",
+    "isActive": true
+  }
+]

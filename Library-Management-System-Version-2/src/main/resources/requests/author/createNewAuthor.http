@@ -1,0 +1,12 @@
+### POST request to create a new author
+POST http://localhost:9092/authors
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "bio": "Jane Smith is an acclaimed author of historical fiction, with several bestsellers to her name."
+}
+
+### Response
+
+###
