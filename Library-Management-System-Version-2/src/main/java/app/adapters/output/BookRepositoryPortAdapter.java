@@ -8,6 +8,8 @@ import app.domain.models.Author;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.models.Book;
 import app.infrastructure.exceptions.BookNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class BookRepositoryPortAdapter implements BookRepositoryPort {
+    private static final Logger log = LoggerFactory.getLogger(BookRepositoryPortAdapter.class);
+
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
 
@@ -27,6 +31,7 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
 
     @Override
     public void saveBook(Book book) {
+        log.info("Saving new book: {}", book.getTitle());
         Set<AuthorEntity> authorEntities = book.getAuthors().stream()
                 .map(author -> {
                     Optional<AuthorEntity> existingAuthor = authorRepository.findByName(author.getName());
@@ -37,6 +42,7 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
                                 author.getBio(),
                                 new HashSet<>()
                         );
+                        log.info("Creating new author: {}", author.getName());
                         return authorRepository.save(newAuthorEntity);
                     });
                 })
@@ -58,22 +64,26 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
         });
         BookEntity savedEntity = bookRepository.save(bookEntity);
         book.setBookId(savedEntity.getBookId());
+        log.info("Book saved with ID: {}", savedEntity.getBookId());
     }
 
     @Override
     public void updateBook(UUID bookID, Book newBook) {
-        bookRepository.findById(bookID).ifPresent(entity -> {
+        log.info("Updating book with ID: {}", bookID);
+        bookRepository.findById(bookID).ifPresentOrElse(entity -> {
             entity.setTitle(newBook.getTitle());
             entity.setIsbn(newBook.getIsbn());
             entity.setPublicationYear(newBook.getPublicationYear());
             entity.setAvailability(newBook.isAvailable());
             entity.setCreated_at(newBook.getCreatedAt());
             bookRepository.save(entity);
-        });
+            log.info("Book updated: {}", entity.getTitle());
+        }, () -> log.warn("Book with ID {} not found. Update skipped.", bookID));
     }
 
     @Override
     public void deleteBook(UUID bookID) {
+        log.info("Deleting book with ID: {}", bookID);
         Optional<BookEntity> existingBook = bookRepository.findById(bookID);
         if (existingBook.isPresent()) {
             BookEntity book = existingBook.get();
@@ -87,7 +97,9 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
             bookRepository.save(book);
 
             bookRepository.deleteById(bookID);
+            log.info("Book deleted successfully: {}", bookID);
         } else {
+            log.error("Book not found with ID: {}", bookID);
             throw new BookNotFoundException("Book not found with ID: " + bookID);
         }
     }
