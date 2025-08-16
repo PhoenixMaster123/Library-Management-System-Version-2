@@ -1,7 +1,7 @@
 package app.infrastructure.config.database;
 
-import app.adapters.out.H2.entity.UserEntity;
-import app.adapters.out.H2.repositories.UserRepository;
+import app.adapters.output.entity.UserEntity;
+import app.adapters.output.repositories.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;

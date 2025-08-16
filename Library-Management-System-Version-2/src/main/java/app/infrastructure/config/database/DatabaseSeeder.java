@@ -1,14 +1,15 @@
 package app.infrastructure.config.database;
 
-import app.adapters.in.dto.CreateNewBook;
-import app.adapters.in.dto.CreateNewCustomer;
-import app.adapters.in.dto.importData.ImportBookDto;
-import app.adapters.in.dto.importData.ImportCustomerDto;
-import app.adapters.out.H2.repositories.BookRepository;
-import app.adapters.out.H2.repositories.CustomerRepository;
-import app.domain.services.BookService;
-import app.domain.services.CustomerService;
-import app.domain.services.TransactionService;
+import app.domain.dto.CreateNewBook;
+import app.domain.dto.CreateNewCustomer;
+import app.domain.dto.importData.ImportBookDto;
+import app.domain.dto.importData.ImportCustomerDto;
+import app.adapters.output.repositories.BookRepository;
+import app.adapters.output.repositories.CustomerRepository;
+import app.domain.dto.importData.ImportTransactionDto;
+import app.domain.port.input.BookUseCase;
+import app.domain.port.input.CustomerUseCase;
+import app.domain.port.input.TransactionUseCase;
 import com.google.gson.Gson;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
@@ -25,18 +26,18 @@ import java.util.UUID;
 
 @Component
 public class DatabaseSeeder implements CommandLineRunner {
-    private final BookService bookService;
-    private final CustomerService customerService;
-    private final TransactionService transactionService;
+    private final BookUseCase bookUseCase;
+    private final CustomerUseCase customerUseCase;
+    private final TransactionUseCase transactionUseCase;
     private final BookRepository bookRepository;
     private final CustomerRepository customerRepository;
     private final Gson gson;
     private final ModelMapper mapper;
 
-    public DatabaseSeeder(BookService bookService, CustomerService customerService, TransactionService transactionService, BookRepository bookRepository, CustomerRepository customerRepository, Gson gson, ModelMapper mapper) {
-        this.bookService = bookService;
-        this.customerService = customerService;
-        this.transactionService = transactionService;
+    public DatabaseSeeder(BookUseCase bookUseCase, CustomerUseCase customerUseCase, TransactionUseCase transactionUseCase, BookRepository bookRepository, CustomerRepository customerRepository, Gson gson, ModelMapper mapper) {
+        this.bookUseCase = bookUseCase;
+        this.customerUseCase = customerUseCase;
+        this.transactionUseCase = transactionUseCase;
         this.bookRepository = bookRepository;
         this.customerRepository = customerRepository;
         this.gson = gson;
@@ -59,7 +60,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 UUID bookId = bookIds.get(i);
                 try {
                     LocalDate borrowDate = LocalDate.now();
-                    transactionService.borrowBookWithDates(customerId, bookId, borrowDate);
+                    transactionUseCase.borrowBookWithDates(customerId, bookId, borrowDate);
                     System.out.println("[Seeder Fallback] Borrowed book: " + bookId + " by customer: " + customerId + " on " + borrowDate);
                 } catch (Exception e) {
                     System.out.println("[Seeder Fallback] Skipping transaction for customer " + customerId + " and book " + bookId + " - " + e.getMessage());
@@ -80,7 +81,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 for (ImportBookDto ib : importBooks) {
                     CreateNewBook create = mapper.map(ib, CreateNewBook.class);
                     try {
-                        bookService.createNewBook(create);
+                        bookUseCase.createNewBook(create);
                         UUID bookId = bookRepository.findBooksByIsbn(create.getIsbn())
                                 .orElseThrow(() -> new IllegalStateException("Book not found"))
                                 .getBookId();
@@ -109,7 +110,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 for (ImportCustomerDto ic : importCustomers) {
                     CreateNewCustomer dto = mapper.map(ic, CreateNewCustomer.class);
                     try {
-                        customerService.createNewCustomer(dto);
+                        customerUseCase.createNewCustomer(dto);
                         UUID customerId = customerRepository.findByName(dto.getName())
                                 .orElseThrow(() -> new IllegalStateException("Customer not found"))
                                 .getCustomerId();
@@ -132,13 +133,13 @@ public class DatabaseSeeder implements CommandLineRunner {
             List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
             String json = String.join("", lines);
 
-            app.adapters.in.dto.importData.ImportTransactionDto[] txs = gson.fromJson(json, app.adapters.in.dto.importData.ImportTransactionDto[].class);
+            ImportTransactionDto[] txs = gson.fromJson(json, ImportTransactionDto[].class);
             if (txs == null || txs.length == 0) {
                 System.out.println("No transactions to import.");
                 return true;
             }
 
-            for (app.adapters.in.dto.importData.ImportTransactionDto t : txs) {
+            for (ImportTransactionDto t : txs) {
                 String name = t.getCustomerName();
                 String isbn = t.getBookIsbn();
                 String borrowStr = t.getBorrowDate();
@@ -156,12 +157,12 @@ public class DatabaseSeeder implements CommandLineRunner {
                             .getBookId();
 
                     LocalDate borrowDate = LocalDate.parse(borrowStr);
-                    transactionService.borrowBookWithDates(customerId, bookId, borrowDate);
+                    transactionUseCase.borrowBookWithDates(customerId, bookId, borrowDate);
                     System.out.println("Imported borrow: book=" + isbn + ", customer=" + name + ", on=" + borrowDate);
 
                     if (returnStr != null && !returnStr.isBlank()) {
                         LocalDate returnDate = LocalDate.parse(returnStr);
-                        transactionService.returnBookWithDates(bookId, returnDate);
+                        transactionUseCase.returnBookWithDates(bookId, returnDate);
                         System.out.println("Imported return: book=" + isbn + ", on=" + returnDate);
                     }
                 } catch (Exception ex) {
