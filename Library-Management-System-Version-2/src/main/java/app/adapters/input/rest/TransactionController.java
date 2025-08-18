@@ -5,6 +5,8 @@ import app.domain.dto.TransactionResponse;
 import app.domain.models.Transaction;
 import app.domain.port.input.BookUseCase;
 import app.domain.port.input.TransactionUseCase;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,6 +26,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/transactions")
+@Tag(name = "Transaction Controller", description = "Endpoints for managing transactions")
 public class TransactionController {
     private final TransactionUseCase transactionUseCase;
     private final BookUseCase bookUseCase;
@@ -34,7 +37,8 @@ public class TransactionController {
         this.bookUseCase = bookUseCase;
     }
 
-    @PostMapping(produces = "application/single-transaction-response+json;version=1")
+    @PostMapping(produces = {"application/single-transaction-response+json;version=1" , MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Create a new transaction")
     public ResponseEntity<Transaction> createNewTransaction(@Valid @RequestBody CreateNewTransaktion newTransaktion) {
         try {
             Transaction transaction = transactionUseCase.createNewTransaction(newTransaktion);
@@ -42,12 +46,12 @@ public class TransactionController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
-    @PostMapping(value = "/returnBook/{bookId}", produces = "application/transaction-response+json;version=1")
+    @PostMapping(value = "/returnBook/{bookId}", produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Return a book")
     public ResponseEntity<TransactionResponse> returnBook(@PathVariable UUID bookId) {
         try {
             if (bookUseCase.searchById(bookId).isEmpty()) {
@@ -63,7 +67,8 @@ public class TransactionController {
         }
     }
 
-    @PostMapping(value = "/borrowBook/{customerId}/{bookId}", produces = "application/transaction-response+json;version=1")
+    @PostMapping(value = "/borrowBook/{customerId}/{bookId}", produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Borrow a book")
     public ResponseEntity<String> borrowBook(
             @PathVariable UUID customerId,
             @PathVariable UUID bookId) {
@@ -76,7 +81,8 @@ public class TransactionController {
         }
     }
 
-    @GetMapping(value = "/history/{customerId}", produces = "application/paginated-transactions-response+json;version=1")
+    @GetMapping(value = "/history/{customerId}", produces = {"application/paginated-transactions-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "View borrowing history for a customer")
     public ResponseEntity<Map<String, Object>> viewBorrowingHistory(
             @PathVariable UUID customerId,
             @RequestParam Optional<Integer> page,
@@ -118,6 +124,7 @@ public class TransactionController {
     }
 
     @GetMapping(value = "/{id}", produces = {"application/single-transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Get a single transaction by ID")
     public ResponseEntity<Map<String, Object>> getTransactionById(@PathVariable UUID id) {
         Optional<Transaction> transactionOpt = transactionUseCase.findById(id);
 
@@ -134,14 +141,9 @@ public class TransactionController {
                 .cachePrivate()
                 .noTransform();
 
-        Map<String, Object> response = Map.of(
-                "message", "Transaction retrieved successfully",
-                "data", transactionOpt.get()
-        );
-
         return ResponseEntity.ok()
                 .cacheControl(cacheControl)
                 .header("Vary", "Accept")
-                .body(response);
+                .body(Map.of("message", "Transaction retrieved successfully", "data", transactionOpt.get()));
     }
 }

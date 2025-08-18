@@ -3,6 +3,8 @@ package app.adapters.input.rest;
 import app.domain.dto.CreateNewBook;
 import app.domain.models.Book;
 import app.domain.port.input.BookUseCase;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/books")
+@Tag(name = "Book Controller", description = "Endpoints for managing books")
 public class BookController {
     private final BookUseCase bookUseCase;
 
@@ -31,13 +34,13 @@ public class BookController {
     }
 
     @PostMapping(produces = "application/single-book-response+json;version=1")
+    @Operation(summary = "Create a new book")
     public ResponseEntity<Book> createNewBook(@Valid @RequestBody CreateNewBook newBook) {
-
         Book book = bookUseCase.createNewBook(newBook);
-
         return ResponseEntity.ok(book);
     }
     @GetMapping(value = "/paginated", produces = "application/paginated-books-response+json;version=1")
+    @Operation(summary = "Get all books")
     public ResponseEntity<Map<String, Object>> getAllBooks(
             @RequestParam Optional<Integer> page,
             @RequestParam Optional<Integer> size,
@@ -82,6 +85,7 @@ public class BookController {
     }
 
     @PutMapping(value = "/{id}", produces = "application/single-book-response+json;version=1")
+    @Operation(summary = "Update a book")
     public ResponseEntity<String> updateBook(@NotNull @PathVariable("id") UUID id, @NotNull @RequestBody Book book) {
         Optional<Book> existingBook = bookUseCase.searchById(id);
         if (existingBook.isEmpty()) {
@@ -92,10 +96,12 @@ public class BookController {
         return new ResponseEntity<>("Book updated successfully", HttpStatus.OK);
     }
     @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a book")
     public ResponseEntity<String> deleteBook(@NotNull @PathVariable("id") UUID bookID) {
         bookUseCase.deleteBook(bookID);
         return new ResponseEntity<>("Book successfully deleted!!", HttpStatus.OK);
     }
+
     @GetMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<Map<String, Object>> getBookById(@PathVariable UUID id) {
 
@@ -118,13 +124,14 @@ public class BookController {
                 "message", "Book retrieved successfully",
                 "data", book
         );
-
         return ResponseEntity.ok()
                 .cacheControl(cacheControl)
                 .header("Vary", "Accept")
                 .body(response);
     }
+
     @GetMapping(produces = "application/single-book-response+json;version=1")
+    @Operation(summary = "Get a book by title, ISBN or author")
     public ResponseEntity<?> getBook(
             @RequestParam(required = false) UUID id,
             @RequestParam(required = false) String title,
@@ -152,21 +159,18 @@ public class BookController {
             if (book.isEmpty()) {
                 return new ResponseEntity<>("Book with the given title not found", HttpStatus.NOT_FOUND);
             }
-
             return ResponseEntity.ok(book);
         } else if (isbn != null) {
             Optional<Book> book = bookUseCase.searchByIsbn(isbn);
             if (book.isEmpty()) {
                 return new ResponseEntity<>("Book with the given ISBN not found", HttpStatus.NOT_FOUND);
             }
-
             return ResponseEntity.ok(book);
         } else if (author != null) {
             Optional<Book> book = bookUseCase.searchBookByAuthors(author, true);
             if (book.isEmpty()) {
                 return new ResponseEntity<>("No books found by the given author", HttpStatus.NOT_FOUND);
             }
-
             return ResponseEntity.ok(book);
         } else if (query != null) {
             int currentPage = page.orElse(0);

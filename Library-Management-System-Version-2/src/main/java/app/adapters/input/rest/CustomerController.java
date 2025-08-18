@@ -3,6 +3,8 @@ package app.adapters.input.rest;
 import app.domain.dto.CreateNewCustomer;
 import app.domain.models.Customer;
 import app.domain.port.input.CustomerUseCase;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/customers")
+@Tag(name = "Customer Controller", description = "Endpoints for managing customers")
 public class CustomerController {
     private final CustomerUseCase customerUseCase;
 
@@ -30,23 +33,23 @@ public class CustomerController {
     public CustomerController(CustomerUseCase customerUseCase) {
         this.customerUseCase = customerUseCase;
     }
-    @PostMapping(produces = "application/single-customer-response+json;version=1")
+
+    @PostMapping(produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Create a new customer")
     public ResponseEntity<Customer> createNewCustomer(@Valid @RequestBody CreateNewCustomer newCustomer) {
-
         Customer customer = customerUseCase.createNewCustomer(newCustomer);
-
         return ResponseEntity.ok(customer);
     }
+
     @GetMapping(value = "/{id}", produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Get a single customer")
     public ResponseEntity<Map<String, Object>> getCustomerById(@PathVariable UUID id) {
         Optional<Customer> customerOpt = customerUseCase.findCustomerById(id);
 
         if (customerOpt.isEmpty()) {
-            Map<String, Object> errorResponse = Map.of(
-                    "message", "Customer not found",
-                    "customerId", id
-            );
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Customer not found", "customerId", id));
         }
 
         CacheControl cacheControl = CacheControl
@@ -54,17 +57,14 @@ public class CustomerController {
                 .cachePrivate()
                 .noTransform();
 
-        Map<String, Object> response = Map.of(
-                "message", "Customer retrieved successfully",
-                "data", customerOpt.get()
-        );
-
         return ResponseEntity.ok()
                 .cacheControl(cacheControl)
                 .header("Vary", "Accept")
-                .body(response);
+                .body(Map.of("message", "Customer retrieved successfully", "data", customerOpt.get()));
     }
-    @GetMapping(value = "/search", produces = "application/paginated-customers-response+json;version=1")
+
+    @GetMapping(value = "/search", produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Search for a customer by name or ID or query")
     public ResponseEntity<Map<String, Object>> getCustomer(
             @RequestParam(required = false) UUID id,
             @RequestParam(required = false) String name,
@@ -119,12 +119,14 @@ public class CustomerController {
 
             return ResponseEntity.ok().headers(headers).body(response);
         } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "No search criteria provided"));
         }
     }
 
-    @GetMapping(value = "/paginated", produces = "application/paginated-customers-response+json;version=1")
+    @GetMapping(value = "/paginated", produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Get all customers")
     public ResponseEntity<Map<String, Object>> getAllCustomers(
             @RequestParam Optional<Integer> page,
             @RequestParam Optional<Integer> size,
@@ -169,14 +171,16 @@ public class CustomerController {
         return ResponseEntity.ok().headers(headers).body(response);
     }
 
-    @PutMapping(value = "/{id}", produces = "application/single-book-response+json;version=1")
+    @PutMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Update a customer")
     public ResponseEntity<String> updateCustomer(@NotNull @PathVariable UUID id, @Valid @RequestBody Customer customer) {
         customer.setCustomerId(id);
         customerUseCase.updateCustomer(customer);
         return ResponseEntity.status(HttpStatus.OK).body("Customer updated successfully!");
     }
 
-    @PutMapping(value = "/{id}/privileges", produces = "application/single-book-response+json;version=1")
+    @PutMapping(value = "/{id}/privileges", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Update a customer privileges")
     public ResponseEntity<String> updateCustomerPrivileges(@NotNull @PathVariable UUID id, @RequestBody(required = false) Boolean privileges) {
         if (privileges == null) {
             return ResponseEntity.badRequest().body("Invalid privileges value");
@@ -185,10 +189,12 @@ public class CustomerController {
         return ResponseEntity.ok("Customer privileges updated successfully!");
     }
 
-
-    @DeleteMapping("/{id}")
+    @DeleteMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Delete a customer")
     public ResponseEntity<String> deleteCustomer(@NotNull @PathVariable UUID id) {
         customerUseCase.deleteCustomer(id);
-        return ResponseEntity.status(HttpStatus.OK).body("Customer successfully deleted!");
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body("Customer successfully deleted!");
     }
 }
