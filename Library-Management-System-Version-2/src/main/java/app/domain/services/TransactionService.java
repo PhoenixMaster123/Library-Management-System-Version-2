@@ -10,6 +10,8 @@ import app.domain.port.output.TransactionRepositoryPort;
 import app.domain.port.input.TransactionUseCase;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,14 @@ public class TransactionService implements TransactionUseCase {
     private final BookRepositoryPort bookRepositoryPort;
     private final CustomerRepositoryPort customerRepositoryPort;
 
+    @Autowired
     public TransactionService(TransactionRepositoryPort transactionRepositoryPort, BookRepositoryPort bookRepositoryPort, CustomerRepositoryPort customerRepositoryPort) {
         this.transactionRepositoryPort = transactionRepositoryPort;
         this.bookRepositoryPort = bookRepositoryPort;
         this.customerRepositoryPort = customerRepositoryPort;
     }
+
+    @Override
     public Transaction createNewTransaction(CreateNewTransaktion newTransaktion) {
 
         if (newTransaktion.getBorrowDate().isAfter(newTransaktion.getDueDate())) {
@@ -57,6 +62,7 @@ public class TransactionService implements TransactionUseCase {
         return transaction;
     }
 
+    @Override
     public String returnBook(UUID bookId) {
         List<Transaction> transactions = transactionRepositoryPort.getTransactionsForBook(new Book(bookId, null, null, 0, false, null));
 
@@ -73,6 +79,8 @@ public class TransactionService implements TransactionUseCase {
 
         return transaction.getTransactionId().toString();
     }
+
+    @Override
     public Transaction borrowBook(UUID customerId, UUID bookId) {
         Book book = bookRepositoryPort.searchBookById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found."));
@@ -101,13 +109,19 @@ public class TransactionService implements TransactionUseCase {
         bookRepositoryPort.updateBook(bookId, book);
         return transaction;
     }
+
+    @Override
     public Page<Transaction> viewBorrowingHistory(UUID customerId, Pageable pageable) {
         return transactionRepositoryPort.viewBorrowingHistory(customerId, pageable);
     }
+
+    @Override
+    //@Cacheable(value = "transaction", key = "#transactionId")
     public Optional<Transaction> findById(UUID transactionId) {
         return transactionRepositoryPort.findTransactionById(transactionId);
     }
 
+    @Override
     public void borrowBookWithDates(UUID customerId, UUID bookId, LocalDate borrowDate) {
         Book book = bookRepositoryPort.searchBookById(bookId)
                 .orElseThrow(() -> new IllegalStateException("Book not found"));
@@ -130,6 +144,8 @@ public class TransactionService implements TransactionUseCase {
         bookRepositoryPort.updateBook(bookId, book);
         transactionRepositoryPort.saveTransaction(transaction);
     }
+
+    @Override
     public void returnBookWithDates(UUID bookId, LocalDate returnDate) {
         List<Transaction> transactions = transactionRepositoryPort.getTransactionsForBook(new Book(bookId, null, null, 0, false, null));
 
