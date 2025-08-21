@@ -1,7 +1,7 @@
 package app.domain.port.input;
 
 import app.domain.dto.CreateNewCustomer;
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

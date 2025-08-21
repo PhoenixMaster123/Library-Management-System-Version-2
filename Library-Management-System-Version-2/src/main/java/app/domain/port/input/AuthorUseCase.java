@@ -1,7 +1,7 @@
 package app.domain.port.input;
 
 import app.domain.dto.CreateNewAuthor;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

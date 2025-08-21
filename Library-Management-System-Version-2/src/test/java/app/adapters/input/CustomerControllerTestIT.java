@@ -2,7 +2,7 @@ package app.adapters.input;
 
 import app.domain.dto.CreateNewCustomer;
 import app.adapters.output.repositories.CustomerRepository;
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import app.domain.port.input.CustomerUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;

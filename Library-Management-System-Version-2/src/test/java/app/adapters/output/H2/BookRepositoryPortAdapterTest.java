@@ -1,34 +1,5 @@
 package app.adapters.output.H2;
 
-import app.adapters.output.BookRepositoryPortAdapter;
-import app.domain.models.Author;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-
-import java.time.LocalDate;
-import java.util.*;
-
-import app.adapters.output.entity.AuthorEntity;
-import app.adapters.output.entity.BookEntity;
-import app.adapters.output.repositories.AuthorRepository;
-import app.adapters.output.repositories.BookRepository;
-
-import app.domain.models.Book;
-import app.infrastructure.exceptions.BookNotFoundException;
-
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 /*
 @ExtendWith(MockitoExtension.class)
 @Tag("unit")

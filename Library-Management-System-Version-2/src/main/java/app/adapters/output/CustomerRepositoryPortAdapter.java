@@ -2,9 +2,9 @@ package app.adapters.output;
 
 import app.adapters.output.entity.CustomerEntity;
 import app.adapters.output.repositories.CustomerRepository;
-import app.domain.models.Transaction;
+import app.domain.model.Transaction;
 import app.domain.port.output.CustomerRepositoryPort;
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

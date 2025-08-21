@@ -1,6 +1,6 @@
 package app.domain.port.output;
 
-import app.domain.models.Book;
+import app.domain.model.Book;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

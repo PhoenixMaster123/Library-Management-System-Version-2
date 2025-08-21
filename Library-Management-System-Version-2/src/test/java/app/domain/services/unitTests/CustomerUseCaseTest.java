@@ -1,6 +1,6 @@
 package app.domain.services.unitTests;
 
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.dto.CreateNewCustomer;
 import app.domain.services.CustomerService;

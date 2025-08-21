@@ -1,5 +1,5 @@
 package app.domain.port.output;
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

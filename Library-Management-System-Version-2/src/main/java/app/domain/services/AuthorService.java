@@ -1,13 +1,11 @@
 package app.domain.services;
 
 import app.domain.dto.CreateNewAuthor;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import app.domain.port.output.AuthorRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

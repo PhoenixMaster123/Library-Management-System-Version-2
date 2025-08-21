@@ -2,7 +2,7 @@ package app.adapters.input.rest;
 
 import app.domain.dto.CreateNewTransaktion;
 import app.domain.dto.TransactionResponse;
-import app.domain.models.Transaction;
+import app.domain.model.Transaction;
 import app.domain.port.input.BookUseCase;
 import app.domain.port.input.TransactionUseCase;
 import io.swagger.v3.oas.annotations.Operation;

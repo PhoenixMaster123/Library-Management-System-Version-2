@@ -1,7 +1,7 @@
 package app.domain.services.unitTests;
 
 import app.domain.dto.CreateNewAuthor;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import app.domain.port.output.AuthorRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
 import app.domain.services.AuthorService;

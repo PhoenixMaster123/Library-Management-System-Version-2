@@ -2,7 +2,7 @@ package app.domain.services.integrationTests;
 
 import app.domain.dto.CreateNewAuthor;
 import app.adapters.output.repositories.AuthorRepository;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import app.domain.port.output.AuthorRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
 import jakarta.transaction.Transactional;

@@ -2,8 +2,8 @@ package app.adapters.output;
 
 import app.adapters.output.entity.AuthorEntity;
 import app.adapters.output.repositories.AuthorRepository;
-import app.domain.models.Author;
-import app.domain.models.Book;
+import app.domain.model.Author;
+import app.domain.model.Book;
 import app.domain.port.output.AuthorRepositoryPort;
 import app.infrastructure.exceptions.AuthorNotFoundException;
 import org.springframework.data.domain.Page;

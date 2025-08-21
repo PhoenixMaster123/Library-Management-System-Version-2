@@ -2,7 +2,7 @@ package app.adapters.input;
 
 import app.domain.dto.CreateNewAuthor;
 import app.adapters.output.repositories.AuthorRepository;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import app.domain.port.input.AuthorUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;

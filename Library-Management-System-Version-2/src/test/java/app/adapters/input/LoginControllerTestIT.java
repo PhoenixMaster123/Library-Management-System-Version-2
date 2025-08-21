@@ -2,7 +2,7 @@ package app.adapters.input;
 
 import app.adapters.output.entity.UserEntity;
 import app.adapters.output.repositories.UserRepository;
-import app.domain.models.AccountCredentials;
+import app.domain.model.AccountCredentials;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

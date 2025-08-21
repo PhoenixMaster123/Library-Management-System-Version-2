@@ -1,7 +1,7 @@
 package app.domain.port.output;
 
-import app.domain.models.Book;
-import app.domain.models.Transaction;
+import app.domain.model.Book;
+import app.domain.model.Transaction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

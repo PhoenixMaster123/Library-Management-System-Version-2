@@ -4,10 +4,10 @@ import app.adapters.output.entity.AuthorEntity;
 import app.adapters.output.entity.BookEntity;
 import app.adapters.output.entity.CustomerEntity;
 import app.adapters.output.entity.TransactionEntity;
-import app.domain.models.Author;
-import app.domain.models.Book;
-import app.domain.models.Customer;
-import app.domain.models.Transaction;
+import app.domain.model.Author;
+import app.domain.model.Book;
+import app.domain.model.Customer;
+import app.domain.model.Transaction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.modelmapper.Converter;
@@ -18,7 +18,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 
 
 @Configuration

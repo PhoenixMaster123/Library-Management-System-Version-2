@@ -1,6 +1,6 @@
 package app.adapters.input.rest;
 
-import app.domain.models.AccountCredentials;
+import app.domain.model.AccountCredentials;
 import app.domain.services.JwtService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;

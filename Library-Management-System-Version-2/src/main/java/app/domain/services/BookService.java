@@ -1,16 +1,13 @@
 package app.domain.services;
 
 import app.domain.dto.CreateNewBook;
-import app.domain.models.Author;
-import app.domain.models.Book;
+import app.domain.model.Author;
+import app.domain.model.Book;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
 import app.domain.port.input.BookUseCase;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

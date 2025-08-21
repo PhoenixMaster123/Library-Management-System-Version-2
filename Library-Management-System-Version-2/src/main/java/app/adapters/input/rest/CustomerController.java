@@ -1,7 +1,7 @@
 package app.adapters.input.rest;
 
 import app.domain.dto.CreateNewCustomer;
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import app.domain.port.input.CustomerUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

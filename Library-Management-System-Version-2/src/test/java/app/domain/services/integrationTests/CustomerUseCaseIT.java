@@ -2,7 +2,7 @@ package app.domain.services.integrationTests;
 
 import app.domain.dto.CreateNewCustomer;
 import app.adapters.output.repositories.CustomerRepository;
-import app.domain.models.Customer;
+import app.domain.model.Customer;
 import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.port.input.CustomerUseCase;
 import org.junit.jupiter.api.AfterEach;

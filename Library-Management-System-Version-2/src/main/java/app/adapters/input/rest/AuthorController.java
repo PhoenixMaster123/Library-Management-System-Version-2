@@ -1,7 +1,7 @@
 package app.adapters.input.rest;
 
 import app.domain.dto.CreateNewAuthor;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import app.domain.port.input.AuthorUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

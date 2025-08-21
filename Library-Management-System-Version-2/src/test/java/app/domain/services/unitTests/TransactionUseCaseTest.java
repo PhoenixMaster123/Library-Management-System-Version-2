@@ -1,8 +1,8 @@
 package app.domain.services.unitTests;
 
-import app.domain.models.Book;
-import app.domain.models.Customer;
-import app.domain.models.Transaction;
+import app.domain.model.Book;
+import app.domain.model.Customer;
+import app.domain.model.Transaction;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.port.output.TransactionRepositoryPort;

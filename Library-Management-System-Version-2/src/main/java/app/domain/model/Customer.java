@@ -1,9 +1,8 @@
-package app.domain.models;
+package app.domain.model;
 
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;

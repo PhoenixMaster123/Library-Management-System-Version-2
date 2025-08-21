@@ -1,9 +1,9 @@
 package app.domain.services;
 
 import app.domain.dto.CreateNewTransaktion;
-import app.domain.models.Book;
-import app.domain.models.Customer;
-import app.domain.models.Transaction;
+import app.domain.model.Book;
+import app.domain.model.Customer;
+import app.domain.model.Transaction;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.port.output.TransactionRepositoryPort;
@@ -11,7 +11,6 @@ import app.domain.port.input.TransactionUseCase;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

@@ -205,6 +205,13 @@
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
         </dependency>
 
+        <!-- OpenFeign for Declarative REST Clients and Communication with Microservices (HTTP) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <version>4.3.0</version>
+        </dependency>
+
         <!-- Other Dependencies -->
 
         <!-- Spring Boot Actuator for Monitoring -->

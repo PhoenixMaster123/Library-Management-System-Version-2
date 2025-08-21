@@ -4,7 +4,7 @@ import app.adapters.output.entity.AuthorEntity;
 import app.adapters.output.entity.BookEntity;
 import app.adapters.output.AuthorRepositoryPortAdapter;
 import app.adapters.output.repositories.AuthorRepository;
-import app.domain.models.Author;
+import app.domain.model.Author;
 import app.infrastructure.exceptions.AuthorNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;

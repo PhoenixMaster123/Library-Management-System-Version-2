@@ -1,7 +1,7 @@
 package app.domain.port.input;
 
 import app.domain.dto.CreateNewBook;
-import app.domain.models.Book;
+import app.domain.model.Book;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

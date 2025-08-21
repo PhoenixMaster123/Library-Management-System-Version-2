@@ -2,8 +2,8 @@ package app.domain.services.unitTests;
 
 import app.domain.dto.CreateNewAuthor;
 import app.domain.dto.CreateNewBook;
-import app.domain.models.Author;
-import app.domain.models.Book;
+import app.domain.model.Author;
+import app.domain.model.Book;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
 import app.domain.port.input.BookUseCase;

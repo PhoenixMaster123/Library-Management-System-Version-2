@@ -4,7 +4,7 @@ import app.domain.dto.CreateNewAuthor;
 import app.domain.dto.CreateNewBook;
 import app.adapters.output.repositories.AuthorRepository;
 import app.adapters.output.repositories.BookRepository;
-import app.domain.models.Book;
+import app.domain.model.Book;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.input.BookUseCase;
 import org.junit.jupiter.api.AfterEach;

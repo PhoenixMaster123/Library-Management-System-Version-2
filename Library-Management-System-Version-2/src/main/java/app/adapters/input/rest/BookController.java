@@ -1,7 +1,7 @@
 package app.adapters.input.rest;
 
 import app.domain.dto.CreateNewBook;
-import app.domain.models.Book;
+import app.domain.model.Book;
 import app.domain.port.input.BookUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

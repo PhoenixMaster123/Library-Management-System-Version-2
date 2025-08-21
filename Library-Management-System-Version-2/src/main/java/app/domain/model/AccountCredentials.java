@@ -1,4 +1,4 @@
-package app.domain.models;
+package app.domain.model;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
