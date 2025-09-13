@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.*;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
@@ -35,7 +36,12 @@ public class BookController {
 
     @PostMapping(produces = "application/single-book-response+json;version=1")
     @Operation(summary = "Create a new book")
-    public ResponseEntity<Book> createNewBook(@Valid @RequestBody CreateNewBook newBook) {
+    public ResponseEntity<Book> createNewBook(@Valid @RequestBody CreateNewBook newBook, BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
         Book book = bookUseCase.createNewBook(newBook);
         return ResponseEntity.ok(book);
     }
@@ -86,7 +92,15 @@ public class BookController {
 
     @PutMapping(value = "/{id}", produces = "application/single-book-response+json;version=1")
     @Operation(summary = "Update a book")
-    public ResponseEntity<String> updateBook(@NotNull @PathVariable("id") UUID id, @NotNull @RequestBody Book book) {
+    public ResponseEntity<String> updateBook(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody Book book,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return new ResponseEntity<>("Invalid book data", HttpStatus.BAD_REQUEST);
+        }
+
         Optional<Book> existingBook = bookUseCase.searchById(id);
         if (existingBook.isEmpty()) {
             return new ResponseEntity<>("Book not found", HttpStatus.NOT_FOUND);
@@ -97,7 +111,7 @@ public class BookController {
     }
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a book")
-    public ResponseEntity<String> deleteBook(@NotNull @PathVariable("id") UUID bookID) {
+    public ResponseEntity<String> deleteBook(@PathVariable("id") UUID bookID) {
         bookUseCase.deleteBook(bookID);
         return new ResponseEntity<>("Book successfully deleted!!", HttpStatus.OK);
     }
@@ -150,7 +164,7 @@ public class BookController {
 
             EntityModel<Book> resource = EntityModel.of(book.get());
             resource.add(linkTo(methodOn(BookController.class).getBook(id, null, null, null, null, Optional.empty(), Optional.empty(), Optional.empty())).withSelfRel());
-            resource.add(linkTo(methodOn(BookController.class).updateBook(id, book.get())).withRel("update"));
+            //resource.add(linkTo(methodOn(BookController.class).updateBook(id, book.get(), null)).withRel("update"));
             resource.add(linkTo(methodOn(BookController.class).deleteBook(id)).withRel("delete"));
 
             return ResponseEntity.ok(resource);

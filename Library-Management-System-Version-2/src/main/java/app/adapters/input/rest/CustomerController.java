@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -36,7 +37,10 @@ public class CustomerController {
 
     @PostMapping(produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Create a new customer")
-    public ResponseEntity<Customer> createNewCustomer(@Valid @RequestBody CreateNewCustomer newCustomer) {
+    public ResponseEntity<Customer> createNewCustomer(@Valid @RequestBody CreateNewCustomer newCustomer, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(null);
+        }
         Customer customer = customerUseCase.createNewCustomer(newCustomer);
         return ResponseEntity.ok(customer);
     }
@@ -173,7 +177,10 @@ public class CustomerController {
 
     @PutMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Update a customer")
-    public ResponseEntity<String> updateCustomer(@NotNull @PathVariable UUID id, @Valid @RequestBody Customer customer) {
+    public ResponseEntity<String> updateCustomer(@PathVariable UUID id, @Valid @RequestBody Customer customer, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body("Invalid customer data");
+        }
         customer.setCustomerId(id);
         customerUseCase.updateCustomer(customer);
         return ResponseEntity.status(HttpStatus.OK).body("Customer updated successfully!");
@@ -181,7 +188,7 @@ public class CustomerController {
 
     @PutMapping(value = "/{id}/privileges", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Update a customer privileges")
-    public ResponseEntity<String> updateCustomerPrivileges(@NotNull @PathVariable UUID id, @RequestBody(required = false) Boolean privileges) {
+    public ResponseEntity<String> updateCustomerPrivileges(@PathVariable UUID id, @RequestBody(required = false) Boolean privileges) {
         if (privileges == null) {
             return ResponseEntity.badRequest().body("Invalid privileges value");
         }
@@ -191,7 +198,7 @@ public class CustomerController {
 
     @DeleteMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Delete a customer")
-    public ResponseEntity<String> deleteCustomer(@NotNull @PathVariable UUID id) {
+    public ResponseEntity<String> deleteCustomer(@PathVariable UUID id) {
         customerUseCase.deleteCustomer(id);
         return ResponseEntity
                 .status(HttpStatus.OK)

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -39,32 +40,23 @@ public class TransactionController {
 
     @PostMapping(produces = {"application/single-transaction-response+json;version=1" , MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Create a new transaction")
-    public ResponseEntity<Transaction> createNewTransaction(@Valid @RequestBody CreateNewTransaktion newTransaktion) {
-        try {
-            Transaction transaction = transactionUseCase.createNewTransaction(newTransaktion);
-            return ResponseEntity.ok(transaction);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    public ResponseEntity<Transaction> createNewTransaction(@Valid @RequestBody CreateNewTransaktion newTransaktion, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(null);
         }
+
+        Transaction transaction = transactionUseCase.createNewTransaction(newTransaktion);
+        return ResponseEntity.ok(transaction);
     }
 
     @PostMapping(value = "/returnBook/{bookId}", produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Return a book")
     public ResponseEntity<TransactionResponse> returnBook(@PathVariable UUID bookId) {
-        try {
-            if (bookUseCase.searchById(bookId).isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new TransactionResponse("Book not found.", null));
-            }
-
-            String transactionId = transactionUseCase.returnBook(bookId);
-            return ResponseEntity.ok(new TransactionResponse("Transaction successful.", UUID.fromString(transactionId)));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new TransactionResponse("Failed to return book: " + e.getMessage(), null));
+        if (bookUseCase.searchById(bookId).isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new TransactionResponse("Book not found.", null));
         }
+        String transactionId = transactionUseCase.returnBook(bookId);
+        return ResponseEntity.ok(new TransactionResponse("Transaction successful.", UUID.fromString(transactionId)));
     }
 
     @PostMapping(value = "/borrowBook/{customerId}/{bookId}", produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
@@ -72,13 +64,8 @@ public class TransactionController {
     public ResponseEntity<String> borrowBook(
             @PathVariable UUID customerId,
             @PathVariable UUID bookId) {
-        try {
             transactionUseCase.borrowBook(customerId, bookId);
             return ResponseEntity.ok("Book borrowed successfully.");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Failed to borrow book: " + e.getMessage());
-        }
     }
 
     @GetMapping(value = "/history/{customerId}", produces = {"application/paginated-transactions-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})

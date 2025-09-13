@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.*;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -33,7 +34,12 @@ public class AuthorController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Create a new author")
-    public ResponseEntity<Author> createNewAuthor(@Valid @RequestBody CreateNewAuthor newAuthor) {
+    public ResponseEntity<Author> createNewAuthor(@Valid @RequestBody CreateNewAuthor newAuthor, BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
         Author author = authorUseCase.createNewAuthor(newAuthor);
         return ResponseEntity.ok(author);
     }
@@ -170,7 +176,12 @@ public class AuthorController {
 
     @PutMapping(value = "/{authorId}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Update an author")
-    public ResponseEntity<String> updateAuthor(@NotNull @PathVariable UUID authorId, @Valid @RequestBody Author author) {
+    public ResponseEntity<String> updateAuthor(@NotNull @PathVariable UUID authorId, @Valid @RequestBody Author author, BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body("Invalid author data");
+        }
+
         author.setAuthorId(authorId);
         authorUseCase.updateAuthor(authorId, author);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body("Author updated successfully!");
