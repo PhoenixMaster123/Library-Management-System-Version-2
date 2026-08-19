@@ -93,12 +93,21 @@ public class TransactionController extends PaginatedController {
         }
     }
 
+    /** Only the member themselves or an administrator may borrow against a membership. */
     @PostMapping(value = "/borrowBook/{customerId}/{bookId}",
             produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Borrow a book")
     public ResponseEntity<String> borrowBook(
             @PathVariable UUID customerId,
-            @PathVariable UUID bookId) {
+            @PathVariable UUID bookId,
+            Authentication authentication) {
+        // The customer id comes from the path, so without this a member could borrow against
+        // somebody else's membership and spend their loan limit. Matches returnBook and extendLoan.
+        if (!isAdmin(authentication) && !isOwner(authentication, customerId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can only borrow against your own membership.");
+        }
+
         try {
             transactionUseCase.borrowBook(customerId, bookId);
             return ResponseEntity.ok("Book borrowed successfully.");
