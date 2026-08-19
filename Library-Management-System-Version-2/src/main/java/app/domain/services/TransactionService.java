@@ -4,13 +4,18 @@ import app.domain.dto.CreateNewTransaktion;
 import app.domain.model.Book;
 import app.domain.model.Customer;
 import app.domain.model.Transaction;
+import app.domain.port.input.TransactionUseCase;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.output.CustomerRepositoryPort;
+import app.domain.port.output.LoanEventPort;
+import app.domain.port.output.NotificationPort;
 import app.domain.port.output.TransactionRepositoryPort;
-import app.domain.port.input.TransactionUseCase;
+import app.infrastructure.exceptions.BookNotFoundException;
+import app.infrastructure.exceptions.BorrowNotAllowedException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,19 +25,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/** The loan rules: who may borrow, for how long, and what a return does. */
 @Service
 @Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class TransactionService implements TransactionUseCase {
+
+    /** How many books one member may hold at a time. */
+    public static final int MAX_ACTIVE_LOANS = 3;
+
+    /** A loan runs two weeks, and may be extended by another two weeks exactly once. */
+    private static final int LOAN_WEEKS = 2;
+    private static final int EXTENSION_WEEKS = 2;
+
     private final TransactionRepositoryPort transactionRepositoryPort;
     private final BookRepositoryPort bookRepositoryPort;
     private final CustomerRepositoryPort customerRepositoryPort;
-
-    @Autowired
-    public TransactionService(TransactionRepositoryPort transactionRepositoryPort, BookRepositoryPort bookRepositoryPort, CustomerRepositoryPort customerRepositoryPort) {
-        this.transactionRepositoryPort = transactionRepositoryPort;
-        this.bookRepositoryPort = bookRepositoryPort;
-        this.customerRepositoryPort = customerRepositoryPort;
-    }
+    private final NotificationPort notificationPort;
+    private final LoanEventPort loanEventPort;
 
     @Override
     public Transaction createNewTransaction(CreateNewTransaktion newTransaktion) {
@@ -63,42 +74,61 @@ public class TransactionService implements TransactionUseCase {
 
     @Override
     public String returnBook(UUID bookId) {
-        List<Transaction> transactions = transactionRepositoryPort.getTransactionsForBook(new Book(bookId, null, null, 0, false, null));
+        List<Transaction> transactions = transactionRepositoryPort
+                .getTransactionsForBook(new Book(bookId, null, null, 0, false, null));
 
         if (transactions.isEmpty()) {
             throw new EntityNotFoundException("No transaction found for the given book.");
         }
 
-        Transaction transaction = transactions.getFirst();
+        // Pick the loan that is still open. Using the first transaction would re-close an
+        // already-returned loan and credit the return to the wrong customer.
+        Transaction transaction = transactions.stream()
+                .filter(t -> t.getReturnDate() == null)
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("This book has no open loan to return."));
+
         transaction.setReturnDate(LocalDate.now());
         transaction.getBook().setAvailable(true);
 
         transactionRepositoryPort.updateTransaction(transaction);
         bookRepositoryPort.updateBook(transaction.getBook().getBookId(), transaction.getBook());
 
+        notificationPort.notifyBookReturned(transaction.getCustomer(), transaction.getBook());
+        loanEventPort.bookReturned(transaction.getCustomer(), transaction.getBook());
+
         return transaction.getTransactionId().toString();
     }
 
     @Override
     public Transaction borrowBook(UUID customerId, UUID bookId) {
+        // Named exceptions rather than a bare RuntimeException: the web layer has to tell a
+        // missing record (404) and a broken library rule (400) apart from an actual failure (500).
         Book book = bookRepositoryPort.searchBookById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found."));
+                .orElseThrow(() -> new BookNotFoundException("Book not found."));
 
         if (!book.isAvailable()) {
-            throw new RuntimeException("Book is not available for borrowing.");
+            throw new BorrowNotAllowedException("Book is not available for borrowing.");
         }
 
         Customer customer = customerRepositoryPort.getCustomer(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Customer not found."));
 
         if (!customer.isPrivileges()) {
-            throw new RuntimeException("Customer does not have borrowing privileges.");
+            throw new BorrowNotAllowedException("Customer does not have borrowing privileges.");
+        }
+
+        long onLoan = transactionRepositoryPort.countActiveLoans(customerId);
+        if (onLoan >= MAX_ACTIVE_LOANS) {
+            throw new BorrowNotAllowedException(
+                    "You already have " + onLoan + " books out. The limit is " + MAX_ACTIVE_LOANS
+                            + " at a time - return one before borrowing another.");
         }
 
         Transaction transaction = new Transaction();
         transaction.setTransactionId(UUID.randomUUID());
         transaction.setBorrowDate(LocalDate.now());
-        transaction.setDueDate(LocalDate.now().plusWeeks(2));
+        transaction.setDueDate(LocalDate.now().plusWeeks(LOAN_WEEKS));
         transaction.setCustomer(customer);
         transaction.setBook(book);
 
@@ -106,6 +136,30 @@ public class TransactionService implements TransactionUseCase {
 
         book.setAvailable(false);
         bookRepositoryPort.updateBook(bookId, book);
+
+        notificationPort.notifyBookBorrowed(customer, book, transaction.getDueDate());
+        loanEventPort.bookBorrowed(customer, book);
+
+        return transaction;
+    }
+
+    /** Pushes the due date out by another loan period. Allowed once, and only while the book is out. */
+    @Override
+    public Transaction extendLoan(UUID transactionId) {
+        Transaction transaction = transactionRepositoryPort.findTransactionById(transactionId)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found."));
+
+        if (transaction.getReturnDate() != null) {
+            throw new BorrowNotAllowedException("This book has already been returned.");
+        }
+        if (transaction.isExtended()) {
+            throw new BorrowNotAllowedException("This loan has already been extended once.");
+        }
+
+        transaction.setDueDate(transaction.getDueDate().plusWeeks(EXTENSION_WEEKS));
+        transaction.setExtended(true);
+        transactionRepositoryPort.updateTransaction(transaction);
+
         return transaction;
     }
 
@@ -115,9 +169,23 @@ public class TransactionService implements TransactionUseCase {
     }
 
     @Override
-    //@Cacheable(value = "transaction", key = "#transactionId")
+    public Page<Transaction> viewAllLoans(Pageable pageable) {
+        return transactionRepositoryPort.findAllTransactions(pageable);
+    }
+
+    @Override
+    public Page<Transaction> viewActiveLoans(Pageable pageable) {
+        return transactionRepositoryPort.findActiveLoans(pageable);
+    }
+
+    @Override
     public Optional<Transaction> findById(UUID transactionId) {
         return transactionRepositoryPort.findTransactionById(transactionId);
+    }
+
+    @Override
+    public Optional<Transaction> findActiveLoanForBook(UUID bookId) {
+        return transactionRepositoryPort.findActiveLoanForBook(bookId);
     }
 
     @Override
@@ -146,7 +214,8 @@ public class TransactionService implements TransactionUseCase {
 
     @Override
     public void returnBookWithDates(UUID bookId, LocalDate returnDate) {
-        List<Transaction> transactions = transactionRepositoryPort.getTransactionsForBook(new Book(bookId, null, null, 0, false, null));
+        List<Transaction> transactions = transactionRepositoryPort
+                .getTransactionsForBook(new Book(bookId, null, null, 0, false, null));
 
         if (transactions.isEmpty()) {
             throw new EntityNotFoundException("No transaction found for the given book.");
@@ -158,7 +227,7 @@ public class TransactionService implements TransactionUseCase {
                 transaction.getBook().setAvailable(true);
                 transactionRepositoryPort.updateTransaction(transaction);
                 bookRepositoryPort.updateBook(transaction.getBook().getBookId(), transaction.getBook());
-                System.out.println("Returned book for transaction: " + transaction.getTransactionId());
+                log.info("Returned book for transaction: {}", transaction.getTransactionId());
             }
         });
     }

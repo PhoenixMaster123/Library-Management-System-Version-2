@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+/** What a completed loan operation reports back. */
 @Getter
 @Setter
 @AllArgsConstructor

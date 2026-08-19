@@ -10,6 +10,7 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/** The details needed to start a loan: who is borrowing, and what. */
 @Getter
 @Setter
 @AllArgsConstructor

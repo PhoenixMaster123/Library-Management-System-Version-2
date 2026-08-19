@@ -1,4 +1,4 @@
-package app.domain.dto.importData;
+package app.domain.dto.importdata;
 
 import com.google.gson.annotations.Expose;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.util.List;
 
+/** A book as it appears in the seed JSON. */
 @Getter
 @Setter
 @NoArgsConstructor

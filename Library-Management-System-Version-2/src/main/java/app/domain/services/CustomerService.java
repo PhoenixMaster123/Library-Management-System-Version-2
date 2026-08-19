@@ -2,11 +2,11 @@ package app.domain.services;
 
 import app.domain.dto.CreateNewCustomer;
 import app.domain.model.Customer;
-import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.port.input.CustomerUseCase;
+import app.domain.port.output.CustomerRepositoryPort;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,15 +14,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Membership: registering members and keeping their details. */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class CustomerService implements CustomerUseCase {
     private final CustomerRepositoryPort customerRepositoryPort;
-
-    @Autowired
-    public CustomerService(CustomerRepositoryPort customerRepositoryPort) {
-        this.customerRepositoryPort = customerRepositoryPort;
-    }
 
     @Override
     public Customer createNewCustomer(CreateNewCustomer createNewCustomer) {
@@ -32,13 +29,11 @@ public class CustomerService implements CustomerUseCase {
     }
 
     @Override
-    //@Cacheable(value = "customer", key = "#id")
     public Optional<Customer> findCustomerById(UUID id) {
         return customerRepositoryPort.getCustomer(id);
     }
 
     @Override
-    //@Cacheable(value = "customer", key = "#customerName")
     public Optional<Customer> findCustomerByName(String customerName) {
         return customerRepositoryPort.getCustomerByName(customerName);
     }
@@ -54,7 +49,6 @@ public class CustomerService implements CustomerUseCase {
     }
 
     @Override
-    //@CachePut(value = "customer", key = "#id")
     public void updatePrivileges(UUID id, boolean privileges) {
         Customer customer = customerRepositoryPort.getCustomer(id)
                 .orElseThrow(() -> new EntityNotFoundException("Customer not found with ID: " + id));
@@ -64,7 +58,6 @@ public class CustomerService implements CustomerUseCase {
     }
 
     @Override
-    //@CachePut(value = "customer", key = "#customer.customerId")
     public void updateCustomer(Customer customer) {
         if (customerRepositoryPort.getCustomer(customer.getCustomerId()).isEmpty()) {
             throw new EntityNotFoundException("Customer not found with ID: " + customer.getCustomerId());
@@ -73,7 +66,6 @@ public class CustomerService implements CustomerUseCase {
     }
 
     @Override
-    //@CacheEvict(value = "customer", key = "#id")
     public void deleteCustomer(UUID id) {
         customerRepositoryPort.deleteCustomer(id);
     }

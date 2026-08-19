@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** The details needed to register a member. */
 @Getter
 @Setter
 @AllArgsConstructor

@@ -1,4 +1,4 @@
-package app.domain.dto.importData;
+package app.domain.dto.importdata;
 
 import com.google.gson.annotations.Expose;
 import jakarta.validation.constraints.Email;
@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** A member as it appears in the seed JSON. */
 @Getter
 @Setter
 @NoArgsConstructor

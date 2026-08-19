@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 
+/** What the application can be asked to do with members. */
 public interface CustomerUseCase {
     Customer createNewCustomer(CreateNewCustomer createNewCustomer);
     Optional<Customer> findCustomerByName(String customerName);

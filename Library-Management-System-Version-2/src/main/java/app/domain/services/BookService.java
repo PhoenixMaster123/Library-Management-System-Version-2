@@ -3,11 +3,11 @@ package app.domain.services;
 import app.domain.dto.CreateNewBook;
 import app.domain.model.Author;
 import app.domain.model.Book;
-import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
 import app.domain.port.input.BookUseCase;
+import app.domain.port.output.BookRepositoryPort;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,25 +18,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/** The catalogue: adding, editing and searching books. */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class BookService implements BookUseCase {
 
     private final BookRepositoryPort bookRepositoryPort;
     private final AuthorUseCase authorUseCase;
-
-    @Autowired
-    public BookService(BookRepositoryPort bookRepositoryPort, AuthorUseCase authorUseCase) {
-        this.bookRepositoryPort = bookRepositoryPort;
-        this.authorUseCase = authorUseCase;
-    }
 
     @Override
     public Book createNewBook(CreateNewBook bookToCreate) {
         if (bookRepositoryPort.searchBookByTitle(bookToCreate.getTitle()).isPresent()) {
             throw new IllegalArgumentException("Book with the same title already exists.");
         }
-        if(bookRepositoryPort.searchByIsbn(bookToCreate.getIsbn()).isPresent()) {
+        if (bookRepositoryPort.searchByIsbn(bookToCreate.getIsbn()).isPresent()) {
             throw new IllegalArgumentException("Book with the same isbn already exists.");
         }
 
@@ -52,6 +48,7 @@ public class BookService implements BookUseCase {
                 true,
                 LocalDate.now()
         );
+        book.setDescription(bookToCreate.getDescription());
         book.getAuthors().addAll(authors);
 
         bookRepositoryPort.saveBook(book);
@@ -64,25 +61,21 @@ public class BookService implements BookUseCase {
     }
 
     @Override
-    //@Cacheable(value = "book", key = "#title")
     public Optional<Book> searchBookByTitle(String title) {
         return bookRepositoryPort.searchBookByTitle(title);
     }
 
     @Override
-    //@Cacheable(value = "book", key = "#author")
     public Optional<Book> searchBookByAuthors(String author, boolean isAvailable) {
         return bookRepositoryPort.searchBookByAuthors(author, isAvailable);
     }
 
     @Override
-    //@Cacheable(value = "book", key = "#isbn")
     public Optional<Book> searchByIsbn(String isbn) {
         return bookRepositoryPort.searchByIsbn(isbn);
     }
 
     @Override
-    //@Cacheable(value = "book", key = "#id")
     public Optional<Book> searchById(UUID id) {
         return bookRepositoryPort.searchBookById(id);
     }
@@ -93,13 +86,11 @@ public class BookService implements BookUseCase {
     }
 
     @Override
-    //@CachePut(value = "book", key = "#book.bookId")
     public void updateBook(UUID bookID, Book book) {
         bookRepositoryPort.updateBook(bookID, book);
     }
 
     @Override
-    //@CacheEvict(value = "book", key = "#bookId")
     public void deleteBook(UUID bookId) {
         bookRepositoryPort.deleteBook(bookId);
     }

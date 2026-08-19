@@ -2,10 +2,10 @@ package app.domain.services;
 
 import app.domain.dto.CreateNewAuthor;
 import app.domain.model.Author;
-import app.domain.port.output.AuthorRepositoryPort;
 import app.domain.port.input.AuthorUseCase;
+import app.domain.port.output.AuthorRepositoryPort;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,16 +13,13 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Author records and the books attributed to them. */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AuthorService implements AuthorUseCase {
 
     private final AuthorRepositoryPort authorRepositoryPort;
-
-    @Autowired
-    public AuthorService(AuthorRepositoryPort authorRepositoryPort) {
-        this.authorRepositoryPort = authorRepositoryPort;
-    }
 
     @Override
     public Author createNewAuthor(CreateNewAuthor createNewAuthor) {
@@ -36,13 +33,11 @@ public class AuthorService implements AuthorUseCase {
     }
 
     @Override
-    //@CachePut(value = "author", key = "#author.authorId")
     public void updateAuthor(UUID authorId, Author author) {
         authorRepositoryPort.updateAuthor(authorId, author);
     }
 
     @Override
-    //@Cacheable(value = "author", key = "#name")
     public Optional<Author> getAuthorByName(String name) {
         return authorRepositoryPort.searchAuthorByName(name);
     }
@@ -58,7 +53,6 @@ public class AuthorService implements AuthorUseCase {
     }
 
     @Override
-    //@Cacheable(value = "author", key = "#authorId")
     public Optional<Author> findAuthorById(UUID authorId) {
         return authorRepositoryPort.searchAuthorByID(authorId);
     }
