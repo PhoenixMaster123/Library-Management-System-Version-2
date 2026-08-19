@@ -1,0 +1,9 @@
+# Keep the build context to source. Anything else is either useless in an image or a leak.
+target/
+.mvn/wrapper/maven-wrapper.jar
+*.log
+.env
+.env.*
+.idea/
+*.iml
+README.md

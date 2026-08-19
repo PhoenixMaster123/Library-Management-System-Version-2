@@ -59,6 +59,32 @@ killed Maven wrapper leaves its Java child running, still holding the port.
 
 The steps below are the same thing by hand.
 
+## Running it in Docker
+
+```bash
+cp .env.example .env     # then fill it in - compose refuses to start with any secret missing
+docker compose up --build
+```
+
+Only the backend publishes a port, and only on loopback (`127.0.0.1:9092`). MySQL, Kafka,
+Notification-Service and Analytics-Service are reachable on the internal network and nowhere else,
+because neither service authenticates its callers.
+
+| Variable | Required | Notes |
+| --------------------- | -------- | ---------------------------------------------------------- |
+| `LIBRARY_JWT_SECRET` | yes | 32+ characters; without it everyone is signed out on restart |
+| `LIBRARY_ADMIN_PASSWORD` | yes | Blank creates no administrator at all |
+| `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD` | yes | For Notification-Service |
+| `LIBRARY_CORS_ORIGINS` | no | Set to the frontend's origin when it is hosted separately |
+| `NOTIFICATION_MAIL_*` | no | Mail stays off, and notifications are stored as `PENDING` |
+
+Put a TLS-terminating reverse proxy in front of 9092; the application speaks plain HTTP, and a
+browser on an HTTPS page will not call an HTTP API.
+
+**The database is still in-memory.** A restart of the backend wipes the catalogue and every
+self-registered member; the administrator is recreated from configuration. Fine for a demo, not for
+anything you want to keep - switch to file-backed H2 on a volume, or Postgres/MySQL, first.
+
 ## Prerequisites
 
 - JDK 21

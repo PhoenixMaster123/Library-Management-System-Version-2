@@ -1,0 +1,140 @@
+# The full stack.
+#
+# Only the library backend publishes a port. MySQL, Kafka and the two supporting services are
+# reachable on the internal network and nowhere else, so nothing here is exposed to the host that
+# does not have to be.
+#
+# Every secret is required rather than defaulted: `${VAR:?...}` stops compose before anything runs
+# if it is missing, which is better than a container coming up with a value from a public
+# repository. Copy .env.example to .env and fill it in.
+
+name: library
+
+x-hardening: &hardening
+  # No process in these containers ever needs to gain privileges it was not started with.
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  restart: unless-stopped
+
+services:
+  backend:
+    build:
+      context: ./Library-Management-System-Version-2
+    <<: *hardening
+    # The only port on the host. Bound to localhost: put a TLS-terminating reverse proxy in front
+    # rather than exposing the application directly.
+    ports:
+      - "127.0.0.1:9092:9092"
+    environment:
+      # No profile: the dev profile turns on the H2 console, which answers without authentication.
+      LIBRARY_JWT_SECRET: ${LIBRARY_JWT_SECRET:?set a signing key of at least 32 characters in .env}
+      LIBRARY_ADMIN_PASSWORD: ${LIBRARY_ADMIN_PASSWORD:?set an administrator password in .env}
+      LIBRARY_CORS_ORIGINS: ${LIBRARY_CORS_ORIGINS:-}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      NOTIFICATION_SERVICE_URL: http://notification:9093/api/v1/notifications
+      ANALYTICS_SERVICE_URL: http://analytics:9095/api/v1/analytics
+    read_only: true
+    tmpfs:
+      # The JVM and Tomcat want somewhere to write; everything else stays read-only.
+      - /tmp
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [library]
+
+  notification:
+    build:
+      context: ./Notification-Service/Notification-Service
+    <<: *hardening
+    # No ports: this service has no authentication of its own and trusts the userId it is given,
+    # so it must never be reachable from outside this network.
+    expose: ["9093"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/notification_service?createDatabaseIfNotExist=true
+      NOTIFICATION_DB_USERNAME: ${MYSQL_USER:?set the database user in .env}
+      NOTIFICATION_DB_PASSWORD: ${MYSQL_PASSWORD:?set the database password in .env}
+      NOTIFICATION_MAIL_USERNAME: ${NOTIFICATION_MAIL_USERNAME:-}
+      NOTIFICATION_MAIL_PASSWORD: ${NOTIFICATION_MAIL_PASSWORD:-}
+      NOTIFICATION_MAIL_ENABLED: ${NOTIFICATION_MAIL_ENABLED:-false}
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [library]
+
+  analytics:
+    build:
+      context: ./Analytics-Service
+    <<: *hardening
+    # Also unauthenticated: the backend proxies it behind its own admin check.
+    expose: ["9095"]
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [library]
+
+  mysql:
+    image: mysql:8.4
+    <<: *hardening
+    # Not published: only Notification-Service needs it.
+    expose: ["3306"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set a root password in .env}
+      MYSQL_DATABASE: notification_service
+      MYSQL_USER: ${MYSQL_USER:?set the database user in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set the database password in .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks: [library]
+
+  kafka:
+    image: apache/kafka:3.9.0
+    <<: *hardening
+    # KRaft, so no ZooKeeper. Single node, which is right for one host and wrong for production.
+    expose: ["9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-5L6g3nShT-eMCtK--X86sw}
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    networks: [library]
+
+volumes:
+  mysql-data:
+  kafka-data:
+
+networks:
+  library:
+    driver: bridge

@@ -51,7 +51,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-    </dependencies>
+            <!-- For the container healthcheck. Only /actuator/health is exposed; see the properties. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+</dependencies>
 
     <build>
         <plugins>
