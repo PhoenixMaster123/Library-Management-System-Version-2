@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in · Library</title>
+    <link rel="stylesheet" th:href="@{/css/pages.css}">
+</head>
+<body>
+<main class="card">
+    <h1>Library</h1>
+    <p class="subtitle">Sign in with your username and password</p>
+
+    <p class="alert error" th:if="${param.error}">Wrong username or password.</p>
+    <p class="alert ok" th:if="${param.logout}">You have been signed out.</p>
+
+    <form method="post" th:action="@{/login}">
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" required autofocus>
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+        <button type="submit">Sign in</button>
+    </form>
+
+    <p class="hint">
+        Demo accounts: <code>admin</code> / <code>admin</code> (can see customers) ·
+        <code>user</code> / <code>user</code>.<br>
+        New members sign up in the web client.
+    </p>
+</main>
+</body>
+</html>

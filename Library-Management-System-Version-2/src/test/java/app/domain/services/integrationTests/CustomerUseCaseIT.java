@@ -6,6 +6,7 @@ import app.domain.model.Customer;
 import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.port.input.CustomerUseCase;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -138,6 +139,17 @@ public class CustomerUseCaseIT {
             Optional<Customer> deletedCustomer = customerRepositoryPort.getCustomer(customer.getCustomerId());
             assertThat(deletedCustomer).isEmpty();
         }
+        /**
+         * These tests count every row in the table - "create 20, expect 20" - so they need it
+         * empty to start with. That used to hold by accident, because whichever class ran before
+         * had deleted its data and nothing put the dev fixture back. Now the fixture is restored
+         * before every test, so the assumption has to be stated rather than inherited.
+         */
+        @BeforeEach
+        void startFromAnEmptyTable() {
+            customerRepository.deleteAll();
+        }
+
         @AfterEach
         void tearDown() {
             customerRepository.deleteAll();

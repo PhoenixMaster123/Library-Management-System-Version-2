@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
+/** What the application can be asked to do with authors. */
 public interface AuthorUseCase {
     Author createNewAuthor(CreateNewAuthor createNewAuthor);
     Optional<Author> findAuthorById(UUID authorId);

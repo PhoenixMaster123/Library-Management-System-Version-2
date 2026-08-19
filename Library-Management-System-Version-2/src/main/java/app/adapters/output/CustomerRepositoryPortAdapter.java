@@ -1,25 +1,27 @@
 package app.adapters.output;
 
 import app.adapters.output.entity.CustomerEntity;
+import app.adapters.output.mapper.EntityMapper;
 import app.adapters.output.repositories.CustomerRepository;
-import app.domain.model.Transaction;
-import app.domain.port.output.CustomerRepositoryPort;
 import app.domain.model.Customer;
+import app.domain.port.output.CustomerRepositoryPort;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Locale;
 
+/** Persists members through JPA. */
 @Component
+@RequiredArgsConstructor
+@Transactional
 public class CustomerRepositoryPortAdapter implements CustomerRepositoryPort {
     private final CustomerRepository customerRepository;
-
-    public CustomerRepositoryPortAdapter(CustomerRepository customerRepository) {
-        this.customerRepository = customerRepository;
-    }
 
     @Override
     public void saveCustomer(Customer customer) {
@@ -36,56 +38,22 @@ public class CustomerRepositoryPortAdapter implements CustomerRepositoryPort {
     }
     @Override
     public Page<Customer> getPaginatedCustomers(Pageable pageable) {
-        return customerRepository.findAll(pageable).map(customerEntity -> new Customer(
-                customerEntity.getCustomerId(),
-                customerEntity.getName(),
-                customerEntity.getEmail(),
-                customerEntity.isPrivileges()
-        ));
+        return customerRepository.findAll(pageable).map(EntityMapper::toCustomerSummary);
     }
+
     @Override
     public Page<Customer> searchCustomer(String query, Pageable pageable) {
-        String lowerQuery = query.toLowerCase();
-
-        Page<CustomerEntity> customerEntity =
-                customerRepository.searchByQuery(lowerQuery, pageable);
-
-        return customerEntity.map(this::mapCustomerEntityToCustomer);
+        return customerRepository.searchByQuery(query.toLowerCase(Locale.ROOT), pageable).map(EntityMapper::toCustomer);
     }
 
     @Override
     public Optional<Customer> getCustomer(UUID id) {
-        return customerRepository.findById(id)
-                .map(this::mapCustomerEntityToCustomer);
+        return customerRepository.findById(id).map(EntityMapper::toCustomer);
     }
+
     @Override
     public Optional<Customer> getCustomerByName(String name) {
-        return customerRepository.findByName(name)
-                .map(this::mapCustomerEntityToCustomer);
-    }
-    private Customer mapCustomerEntityToCustomer(CustomerEntity customerEntity) {
-        Customer customer = new Customer(
-                customerEntity.getCustomerId(),
-                customerEntity.getName(),
-                customerEntity.getEmail(),
-                customerEntity.isPrivileges()
-        );
-
-        customerEntity.getTransactions().forEach(transactionEntity -> {
-            Transaction transaction = new Transaction(
-                    transactionEntity.getTransactionId(),
-                    transactionEntity.getBorrowDate(),
-                    transactionEntity.getReturnDate(),
-                    transactionEntity.getDueDate()
-            );
-
-            transaction.setCustomerId(customerEntity.getCustomerId());
-            transaction.setBookId(transactionEntity.getBook() != null ? transactionEntity.getBook().getBookId() : null);
-
-            customer.getTransactions().add(transaction);
-        });
-
-        return customer;
+        return customerRepository.findByName(name).map(EntityMapper::toCustomer);
     }
 
     @Override

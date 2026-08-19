@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 
+/** What the application can be asked to do with the catalogue. */
 public interface BookUseCase {
     Book createNewBook(CreateNewBook bookToCreate);
     Page<Book> getPaginatedBooks(Pageable pageable);

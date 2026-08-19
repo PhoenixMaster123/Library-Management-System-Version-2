@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Storage the domain needs for members. */
 public interface CustomerRepositoryPort {
 
     void saveCustomer(Customer customer);

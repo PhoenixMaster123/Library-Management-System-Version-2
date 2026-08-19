@@ -8,7 +8,8 @@
   {
     "customerName": "Bob Johnson",
     "bookIsbn": "9780061120084",
-    "borrowDate": "2025-08-05"
+    "borrowDate": "2025-08-05",
+    "returnDate": "2025-08-19"
   },
   {
     "customerName": "Charlie Brown",
@@ -25,7 +26,8 @@
   {
     "customerName": "Ethan Hunt",
     "bookIsbn": "9780199232765",
-    "borrowDate": "2025-08-02"
+    "borrowDate": "2025-08-02",
+    "returnDate": "2025-08-16"
   },
   {
     "customerName": "Fiona Gallagher",
@@ -42,7 +44,8 @@
   {
     "customerName": "Hannah Abbott",
     "bookIsbn": "9780261102217",
-    "borrowDate": "2025-08-04"
+    "borrowDate": "2025-08-04",
+    "returnDate": "2025-08-18"
   },
   {
     "customerName": "Ivan Drago",
@@ -53,7 +56,8 @@
   {
     "customerName": "Julia Roberts",
     "bookIsbn": "9780140268867",
-    "borrowDate": "2025-08-06"
+    "borrowDate": "2025-08-06",
+    "returnDate": "2025-08-20"
   },
   {
     "customerName": "Alice Smith",
@@ -64,7 +68,8 @@
   {
     "customerName": "Bob Johnson",
     "bookIsbn": "9780743273565",
-    "borrowDate": "2025-08-07"
+    "borrowDate": "2025-08-07",
+    "returnDate": "2025-08-21"
   },
   {
     "customerName": "Charlie Brown",

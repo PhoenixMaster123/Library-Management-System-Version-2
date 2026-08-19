@@ -1,12 +1,15 @@
 package app.adapters.input;
 
 import app.adapters.input.rest.GlobalExceptionHandler;
+import app.infrastructure.exceptions.AuthorNotFoundException;
 import app.infrastructure.exceptions.BookNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,10 +24,29 @@ class GlobalExceptionHandlerTest {
     @Test
     void testHandleBookNotFoundException() {
         BookNotFoundException exception = new BookNotFoundException("Book not found");
-        ResponseEntity<String> response = globalExceptionHandler.handleBookNotFoundException(exception);
+        ResponseEntity<Map<String, String>> response = globalExceptionHandler.handleNotFound(exception);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(response.getBody()).isEqualTo("Book not found");
+        assertThat(response.getBody()).containsEntry("message", "Book not found");
+    }
+
+    /** The subclass that used to fall through to the 500 catch-all because nothing matched it. */
+    @Test
+    void testHandleAuthorNotFoundException() {
+        AuthorNotFoundException exception = new AuthorNotFoundException("Author not found");
+        ResponseEntity<Map<String, String>> response = globalExceptionHandler.handleNotFound(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).containsEntry("message", "Author not found");
+    }
+
+    @Test
+    void testHandleNotFoundWithoutMessage() {
+        ResponseEntity<Map<String, String>> response =
+                globalExceptionHandler.handleNotFound(new BookNotFoundException(null));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).containsEntry("message", "Not found");
     }
 
     @Test

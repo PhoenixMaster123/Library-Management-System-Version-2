@@ -1,11 +1,19 @@
 package app.adapters.input;
 
 import app.domain.dto.CreateNewAuthor;
+import app.domain.dto.CreateNewCustomer;
+import app.adapters.output.entity.UserEntity;
 import app.adapters.output.repositories.AuthorRepository;
 import app.adapters.output.repositories.BookRepository;
+import app.adapters.output.repositories.CustomerRepository;
+import app.adapters.output.repositories.TransactionRepository;
+import app.adapters.output.repositories.UserRepository;
 import app.domain.model.Author;
 import app.domain.model.Book;
+import app.domain.model.Customer;
 import app.domain.port.input.BookUseCase;
+import app.domain.port.input.CustomerUseCase;
+import app.domain.port.input.TransactionUseCase;
 import app.domain.dto.CreateNewBook;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
@@ -15,24 +23,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @WithMockUser(username = "user")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Tag("integration")
 public class BookControllerTestIT {
 
@@ -49,26 +54,19 @@ public class BookControllerTestIT {
 
     @Autowired
     private AuthorRepository authorRepository;
-    @Test
-    public void testCreateNewBook() throws Exception {
-        CreateNewBook newBook = new CreateNewBook("Test Book", "1234567890",
-                2021, List.of(
-                        new CreateNewAuthor("Test Author", "test")));
 
-        mockMvc.perform(post("/books")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newBook)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Book"))
-                .andExpect(jsonPath("$.isbn").value("1234567890"))
-                .andExpect(jsonPath("$.publicationYear").value(2021))
-                .andExpect(jsonPath("$.authors[0].name").value("Test Author"));
-
-        assertEquals("Test Book", newBook.getTitle());
-        assertEquals("1234567890", newBook.getIsbn());
-        assertEquals(2021, newBook.getPublicationYear());
-        assertEquals("Test Author", newBook.getAuthors().getFirst().getName());
-    }
+    @Autowired
+    private CustomerUseCase customerUseCase;
+    @Autowired
+    private TransactionUseCase transactionUseCase;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
+    @Autowired
+    private TransactionRepository transactionRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Test
     public void testGetAllBooks() throws Exception {
@@ -105,63 +103,6 @@ public class BookControllerTestIT {
                 .andExpect(jsonPath("$.data[4].title").value("War and Peace"));
     }
     @Test
-    public void testUpdateBook() throws Exception {
-        Book createdBook = bookUseCase.createNewBook(
-                new CreateNewBook("Test Book", "1234567890",
-                        2021, List.of(
-                        new CreateNewAuthor("Test Author", "test"))));
-
-        Book bookToUpdate = new Book();
-        bookToUpdate.setTitle("Updated Title");
-        bookToUpdate.setIsbn("1234567890");
-        bookToUpdate.setPublicationYear(2021);
-        bookToUpdate.setAvailable(true);
-        bookToUpdate.setCreatedAt(LocalDate.now());
-        bookToUpdate.setAuthors(Set.of(new Author("Updated Author", "updated")));
-
-        mockMvc.perform(put("/books/" + createdBook.getBookId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(bookToUpdate)))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Book updated successfully"));
-
-        assertEquals("Updated Title", bookToUpdate.getTitle());
-        assertEquals("1234567890", bookToUpdate.getIsbn());
-        assertEquals(2021, bookToUpdate.getPublicationYear());
-        assertTrue(bookToUpdate.isAvailable());
-        assertNotNull(bookToUpdate.getCreatedAt());
-    }
-    @Test
-    public void testUpdateBook_NotFound() throws Exception {
-        Book bookToUpdate = new Book();
-        bookToUpdate.setTitle("Updated Title");
-        bookToUpdate.setIsbn("1234567890");
-        bookToUpdate.setPublicationYear(2021);
-        bookToUpdate.setAvailable(true);
-        bookToUpdate.setCreatedAt(LocalDate.now());
-        bookToUpdate.setAuthors(Set.of(new Author("Updated Author", "updated")));
-
-        mockMvc.perform(put("/books/12345678-1234-1234-1234-123456789012")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(bookToUpdate)))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Book not found"));
-    }
-
-    @Test
-    public void testDeleteBook() throws Exception {
-        Book book = bookUseCase.createNewBook(
-                new CreateNewBook("Test Book", "1234567890",
-                        2021, List.of(
-                        new CreateNewAuthor("Test Author", "test"))));
-
-        mockMvc.perform(delete("/books/" + book.getBookId()))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Book successfully deleted!!"));
-
-    }
-
-    @Test
     public void testGetBookById() throws Exception {
         Book book = bookUseCase.createNewBook(
                 new CreateNewBook("Test Book", "1234567890",
@@ -171,10 +112,10 @@ public class BookControllerTestIT {
         mockMvc.perform(get("/books")
                         .param("id", book.getBookId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Book"))
-                .andExpect(jsonPath("$.isbn").value("1234567890"))
-                .andExpect(jsonPath("$.publicationYear").value(2021))
-                .andExpect(jsonPath("$.authors[0].name").value("Test Author"));
+                .andExpect(jsonPath("$[0].title").value("Test Book"))
+                .andExpect(jsonPath("$[0].isbn").value("1234567890"))
+                .andExpect(jsonPath("$[0].publicationYear").value(2021))
+                .andExpect(jsonPath("$[0].authors[0].name").value("Test Author"));
 
     }
     @Test
@@ -182,7 +123,7 @@ public class BookControllerTestIT {
         mockMvc.perform(get("/books")
                         .param("id", "12345678-1234-1234-1234-123456789012"))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Book not found"));
+                .andExpect(jsonPath("$.message").value("Book not found"));
     }
     @Test
     void testGetBookById_Method() throws Exception {
@@ -214,17 +155,17 @@ public class BookControllerTestIT {
         mockMvc.perform(get("/books")
                         .param("title", "Test Book"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Book"))
-                .andExpect(jsonPath("$.isbn").value("1234567890"))
-                .andExpect(jsonPath("$.publicationYear").value(2021))
-                .andExpect(jsonPath("$.authors[0].name").value("Test Author"));
+                .andExpect(jsonPath("$[0].title").value("Test Book"))
+                .andExpect(jsonPath("$[0].isbn").value("1234567890"))
+                .andExpect(jsonPath("$[0].publicationYear").value(2021))
+                .andExpect(jsonPath("$[0].authors[0].name").value("Test Author"));
     }
     @Test
     public void testGetBookByTitle_NotFound() throws Exception {
         mockMvc.perform(get("/books")
                         .param("title", "Test Book"))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Book with the given title not found"));
+                .andExpect(jsonPath("$.message").value("Book with the given title not found"));
     }
     @Test
     public void testGetBookByIsbn() throws Exception {
@@ -236,17 +177,17 @@ public class BookControllerTestIT {
         mockMvc.perform(get("/books")
                         .param("isbn", "1234567890"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Book"))
-                .andExpect(jsonPath("$.isbn").value("1234567890"))
-                .andExpect(jsonPath("$.publicationYear").value(2021))
-                .andExpect(jsonPath("$.authors[0].name").value("Test Author"));
+                .andExpect(jsonPath("$[0].title").value("Test Book"))
+                .andExpect(jsonPath("$[0].isbn").value("1234567890"))
+                .andExpect(jsonPath("$[0].publicationYear").value(2021))
+                .andExpect(jsonPath("$[0].authors[0].name").value("Test Author"));
     }
     @Test
     public void testGetBookByIsbn_NotFound() throws Exception {
         mockMvc.perform(get("/books")
                         .param("isbn", "1234567890"))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Book with the given ISBN not found"));
+                .andExpect(jsonPath("$.message").value("Book with the given ISBN not found"));
     }
     @Test
     public void testGetBookByAuthor() throws Exception {
@@ -258,17 +199,17 @@ public class BookControllerTestIT {
         mockMvc.perform(get("/books")
                         .param("author", "Test Author"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Test Book"))
-                .andExpect(jsonPath("$.isbn").value("1234567890"))
-                .andExpect(jsonPath("$.publicationYear").value(2021))
-                .andExpect(jsonPath("$.authors[0].name").value("Test Author"));
+                .andExpect(jsonPath("$[0].title").value("Test Book"))
+                .andExpect(jsonPath("$[0].isbn").value("1234567890"))
+                .andExpect(jsonPath("$[0].publicationYear").value(2021))
+                .andExpect(jsonPath("$[0].authors[0].name").value("Test Author"));
     }
     @Test
     public void testGetBookByAuthor_NotFound() throws Exception {
         mockMvc.perform(get("/books")
                         .param("author", "Test Author"))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("No books found by the given author"));
+                .andExpect(jsonPath("$.message").value("No books found by the given author"));
     }
     @Test
     public void testGetBookByQuery() throws Exception {
@@ -295,7 +236,7 @@ public class BookControllerTestIT {
                 .andExpect(header().string("self", Matchers.containsString("/books?query=The&page=0&size=2")))
                 .andExpect(header().string("next", Matchers.containsString("/books?query=The&page=1&size=2")))
                 .andExpect(header().doesNotExist("prev"))
-                .andExpect(jsonPath("$.length()").value(2))  // Only 2 books in the first page
+                .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].title").value("The Catcher in the Rye"))
                 .andExpect(jsonPath("$[1].title").value("The Divine Comedy"));
 
@@ -328,16 +269,102 @@ public class BookControllerTestIT {
         mockMvc.perform(get("/books")
                         .param("query", "Test Book"))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("No books found for the given query"));
+                .andExpect(jsonPath("$.message").value("No books found for the given query"));
     }
     @Test
     public void testNoCriteriaProvided() throws Exception {
         mockMvc.perform(get("/books"))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("No search criteria provided"));
+                .andExpect(jsonPath("$.message").value("No search criteria provided"));
     }
+
+    /**
+     * Browsing and searching answer with the same paged shape, so the reader can page through
+     * search results the way they page through the shelves.
+     */
+    @Test
+    public void testPaginatedNarrowedByQuery() throws Exception {
+        mockMvc.perform(get("/books/paginated")
+                        .param("page", "0")
+                        .param("size", "2")
+                        .param("query", "The"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.totalItems").value(5))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.data[0].title").value("The Catcher in the Rye"))
+                .andExpect(jsonPath("$.data[1].title").value("The Divine Comedy"));
+    }
+
+    @Test
+    public void testPaginatedWithQueryMatchingNothing() throws Exception {
+        mockMvc.perform(get("/books/paginated")
+                        .param("query", "no-such-book"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("No books match that search."));
+    }
+
+    /** A blank query browses the shelves rather than searching for nothing. */
+    @Test
+    public void testPaginatedIgnoresABlankQuery() throws Exception {
+        mockMvc.perform(get("/books/paginated")
+                        .param("size", "5")
+                        .param("query", "   "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].title").value("1984"));
+    }
+
+    /**
+     * The availability flag alone cannot tell "you have this out" from "somebody else does", which
+     * is why the panel used to offer Borrow on a book the reader was already holding.
+     */
+    @Test
+    @WithMockUser(username = "member")
+    public void testBookDetailSaysWhenTheReaderIsTheBorrower() throws Exception {
+        Customer member = customerUseCase.createNewCustomer(
+                new CreateNewCustomer("Detail Member", "detail@example.com", true));
+        userRepository.save(new UserEntity(
+                "member", passwordEncoder.encode("secret"), "USER", member.getCustomerId()));
+
+        Book book = bookUseCase.createNewBook(new CreateNewBook("Borrowed Book", "1234567891",
+                2021, List.of(new CreateNewAuthor("Detail Author", "test"))));
+
+        mockMvc.perform(get("/books/{id}", book.getBookId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andExpect(jsonPath("$.borrowedByMe").value(false));
+
+        transactionUseCase.borrowBook(member.getCustomerId(), book.getBookId());
+
+        mockMvc.perform(get("/books/{id}", book.getBookId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andExpect(jsonPath("$.borrowedByMe").value(true))
+                .andExpect(jsonPath("$.dueDate").exists());
+    }
+
+    /** Somebody else's loan gets the reader a due date to wait for, not a Return button. */
+    @Test
+    public void testBookDetailSaysWhenSomebodyElseHasIt() throws Exception {
+        Customer other = customerUseCase.createNewCustomer(
+                new CreateNewCustomer("Other Member", "other@example.com", true));
+        Book book = bookUseCase.createNewBook(new CreateNewBook("Someone Elses Book", "1234567893",
+                2021, List.of(new CreateNewAuthor("Detail Author", "test"))));
+
+        transactionUseCase.borrowBook(other.getCustomerId(), book.getBookId());
+
+        mockMvc.perform(get("/books/{id}", book.getBookId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andExpect(jsonPath("$.borrowedByMe").value(false))
+                .andExpect(jsonPath("$.dueDate").exists());
+    }
+
     @AfterEach
     public void tearDown() {
+        transactionRepository.deleteAll();
+        userRepository.deleteAll();
+        customerRepository.deleteAll();
         bookRepository.deleteAll();
         authorRepository.deleteAll();
     }

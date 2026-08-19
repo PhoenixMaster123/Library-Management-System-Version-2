@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Storage the domain needs for books. */
 public interface BookRepositoryPort {
     void saveBook(Book book);
     void updateBook(UUID bookID, Book book);

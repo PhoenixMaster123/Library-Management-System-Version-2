@@ -19,11 +19,20 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Tag("unit")
@@ -119,8 +128,14 @@ class AuthorRepositoryPortAdapterTest {
     void test_searchAuthorByName() {
         String authorName = "Author Name";
         Set<BookEntity> bookEntities = new HashSet<>();
-        bookEntities.add(new BookEntity(UUID.randomUUID(), "Book Title 1", "1234567890", 2022, true, LocalDate.now(), new HashSet<>(), new ArrayList<>()));
-        bookEntities.add(new BookEntity(UUID.randomUUID(), "Book Title 2", "0987654321", 2023, false, LocalDate.now(), new HashSet<>(), new ArrayList<>()));
+        bookEntities.add(BookEntity.builder()
+                .bookId(UUID.randomUUID()).title("Book Title 1").isbn("1234567890")
+                .publicationYear(2022).availability(true).createdAt(LocalDate.now())
+                .authors(new HashSet<>()).transactions(new ArrayList<>()).build());
+        bookEntities.add(BookEntity.builder()
+                .bookId(UUID.randomUUID()).title("Book Title 2").isbn("0987654321")
+                .publicationYear(2023).availability(false).createdAt(LocalDate.now())
+                .authors(new HashSet<>()).transactions(new ArrayList<>()).build());
 
         AuthorEntity authorEntity = new AuthorEntity(
                 UUID.randomUUID(),

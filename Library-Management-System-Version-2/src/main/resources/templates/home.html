@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Account · Library</title>
+    <link rel="stylesheet" th:href="@{/css/pages.css}">
+</head>
+<body>
+<main class="card">
+    <h1>Signed in</h1>
+    <p class="subtitle">You are authenticated against the Library Management System.</p>
+
+    <dl>
+        <dt>Username</dt>
+        <dd th:text="${username}">user</dd>
+        <dt>Role</dt>
+        <dd><span class="badge" th:text="${roles}">USER</span></dd>
+    </dl>
+
+    <ul class="links">
+        <li><a href="http://localhost:5173">Open the web client</a></li>
+        <li><a th:href="@{/h2-console}">H2 database console</a></li>
+    </ul>
+
+    <p class="hint" th:if="${admin}">
+        As an administrator you can also browse the library members in the web client.
+    </p>
+    <p class="hint" th:unless="${admin}">
+        The member list is reserved for administrators, so it stays hidden from this account.
+    </p>
+
+    <form method="post" th:action="@{/logout}">
+        <button class="secondary" type="submit">Sign out</button>
+    </form>
+</main>
+</body>
+</html>

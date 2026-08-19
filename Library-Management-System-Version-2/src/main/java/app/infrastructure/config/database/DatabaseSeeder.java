@@ -1,30 +1,41 @@
 package app.infrastructure.config.database;
 
-import app.domain.dto.CreateNewBook;
-import app.domain.dto.CreateNewCustomer;
-import app.domain.dto.importData.ImportBookDto;
-import app.domain.dto.importData.ImportCustomerDto;
 import app.adapters.output.repositories.BookRepository;
 import app.adapters.output.repositories.CustomerRepository;
-import app.domain.dto.importData.ImportTransactionDto;
+import app.domain.dto.CreateNewBook;
+import app.domain.dto.CreateNewCustomer;
+import app.domain.dto.importdata.ImportBookDto;
+import app.domain.dto.importdata.ImportCustomerDto;
+import app.domain.dto.importdata.ImportTransactionDto;
 import app.domain.port.input.BookUseCase;
 import app.domain.port.input.CustomerUseCase;
 import app.domain.port.input.TransactionUseCase;
 import com.google.gson.Gson;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * The dev fixture: books, customers and loans read from {@code resources/files/json}.
+ *
+ * <p>Dev profile only; {@link CatalogSeeder} stocks the shelves everywhere else.
+ */
 @Component
+@Profile("dev")
+@RequiredArgsConstructor
+@Slf4j
 public class DatabaseSeeder implements CommandLineRunner {
     private final BookUseCase bookUseCase;
     private final CustomerUseCase customerUseCase;
@@ -33,16 +44,6 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final CustomerRepository customerRepository;
     private final Gson gson;
     private final ModelMapper mapper;
-
-    public DatabaseSeeder(BookUseCase bookUseCase, CustomerUseCase customerUseCase, TransactionUseCase transactionUseCase, BookRepository bookRepository, CustomerRepository customerRepository, Gson gson, ModelMapper mapper) {
-        this.bookUseCase = bookUseCase;
-        this.customerUseCase = customerUseCase;
-        this.transactionUseCase = transactionUseCase;
-        this.bookRepository = bookRepository;
-        this.customerRepository = customerRepository;
-        this.gson = gson;
-        this.mapper = mapper;
-    }
 
     @Override
     public void run(String... args){
@@ -61,9 +62,11 @@ public class DatabaseSeeder implements CommandLineRunner {
                 try {
                     LocalDate borrowDate = LocalDate.now();
                     transactionUseCase.borrowBookWithDates(customerId, bookId, borrowDate);
-                    System.out.println("[Seeder Fallback] Borrowed book: " + bookId + " by customer: " + customerId + " on " + borrowDate);
+                    log.info("[Seeder Fallback] Borrowed book: {} by customer: {} on {}",
+                            bookId, customerId, borrowDate);
                 } catch (Exception e) {
-                    System.out.println("[Seeder Fallback] Skipping transaction for customer " + customerId + " and book " + bookId + " - " + e.getMessage());
+                    log.warn("[Seeder Fallback] Skipping transaction for customer {} and book {} - {}",
+                            customerId, bookId, e.getMessage());
                 }
             }
         }
@@ -72,9 +75,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private List<UUID> importBooksFromJson(){
         List<UUID> bookIds = new ArrayList<>();
         try {
-            Path path = new ClassPathResource("files/json/books.json").getFile().toPath();
-            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-            String json = String.join("", lines);
+            String json = readClasspathJson("files/json/books.json");
 
             ImportBookDto[] importBooks = gson.fromJson(json, ImportBookDto[].class);
             if (importBooks != null) {
@@ -86,14 +87,14 @@ public class DatabaseSeeder implements CommandLineRunner {
                                 .orElseThrow(() -> new IllegalStateException("Book not found"))
                                 .getBookId();
                         bookIds.add(bookId);
-                        System.out.println("Seeded book: " + create.getTitle());
+                        log.info("Seeded book: {}", create.getTitle());
                     } catch (IllegalArgumentException e) {
-                        System.out.println("Skipping book: " + create.getTitle() + " - " + e.getMessage());
+                        log.warn("Skipping book: {} - {}", create.getTitle(), e.getMessage());
                     }
                 }
             }
         } catch (Exception e) {
-            System.out.println("Failed to read books JSON via readAllLines: " + e.getMessage());
+            log.warn("Failed to read books JSON: {}", e.getMessage());
         }
         return bookIds;
     }
@@ -101,9 +102,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private List<UUID> importCustomersFromJson() {
         List<UUID> customerIds = new ArrayList<>();
         try {
-            Path path = new ClassPathResource("files/json/customers.json").getFile().toPath();
-            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-            String json = String.join("", lines);
+            String json = readClasspathJson("files/json/customers.json");
 
             ImportCustomerDto[] importCustomers = gson.fromJson(json, ImportCustomerDto[].class);
             if (importCustomers != null) {
@@ -115,27 +114,25 @@ public class DatabaseSeeder implements CommandLineRunner {
                                 .orElseThrow(() -> new IllegalStateException("Customer not found"))
                                 .getCustomerId();
                         customerIds.add(customerId);
-                        System.out.println("Seeded customer: " + dto.getName());
+                        log.info("Seeded customer: {}", dto.getName());
                     } catch (Exception e) {
-                        System.out.println("Skipping customer: " + dto.getName() + " - " + e.getMessage());
+                        log.warn("Skipping customer: {} - {}", dto.getName(), e.getMessage());
                     }
                 }
             }
         } catch (Exception e) {
-            System.out.println("Failed to read customers JSON via readAllLines: " + e.getMessage());
+            log.warn("Failed to read customers JSON: {}", e.getMessage());
         }
         return customerIds;
     }
 
     private boolean importTransactionsFromJson() {
         try {
-            Path path = new ClassPathResource("files/json/transactions.json").getFile().toPath();
-            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
-            String json = String.join("", lines);
+            String json = readClasspathJson("files/json/transactions.json");
 
             ImportTransactionDto[] txs = gson.fromJson(json, ImportTransactionDto[].class);
             if (txs == null || txs.length == 0) {
-                System.out.println("No transactions to import.");
+                log.info("No transactions to import.");
                 return true;
             }
 
@@ -146,7 +143,8 @@ public class DatabaseSeeder implements CommandLineRunner {
                 String returnStr = t.getReturnDate();
                 try {
                     if (name == null || isbn == null || borrowStr == null) {
-                        System.out.println("Skipping transaction due to missing required fields (customerName/bookIsbn/borrowDate).");
+                        log.warn("Skipping transaction due to missing required fields "
+                                + "(customerName/bookIsbn/borrowDate).");
                         continue;
                     }
                     UUID customerId = customerRepository.findByName(name)
@@ -158,21 +156,32 @@ public class DatabaseSeeder implements CommandLineRunner {
 
                     LocalDate borrowDate = LocalDate.parse(borrowStr);
                     transactionUseCase.borrowBookWithDates(customerId, bookId, borrowDate);
-                    System.out.println("Imported borrow: book=" + isbn + ", customer=" + name + ", on=" + borrowDate);
+                    log.info("Imported borrow: book={}, customer={}, on={}", isbn, name, borrowDate);
 
                     if (returnStr != null && !returnStr.isBlank()) {
                         LocalDate returnDate = LocalDate.parse(returnStr);
                         transactionUseCase.returnBookWithDates(bookId, returnDate);
-                        System.out.println("Imported return: book=" + isbn + ", on=" + returnDate);
+                        log.info("Imported return: book={}, on={}", isbn, returnDate);
                     }
                 } catch (Exception ex) {
-                    System.out.println("Skipping transaction (customer=" + name + ", isbn=" + isbn + ") - " + ex.getMessage());
+                    log.warn("Skipping transaction (customer={}, isbn={}) - {}", name, isbn, ex.getMessage());
                 }
             }
             return true;
         } catch (Exception e) {
-            System.out.println("Transactions JSON not found or failed to read: " + e.getMessage());
+            log.warn("Transactions JSON not found or failed to read: {}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Reads a seed file through the classpath stream rather than as a File. ClassPathResource
+     * .getFile() only works while the resources sit loose on disk: from the packaged jar it
+     * throws, which silently left the whole catalogue unseeded.
+     */
+    private String readClasspathJson(String location) throws IOException {
+        try (InputStream stream = new ClassPathResource(location).getInputStream()) {
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
 }

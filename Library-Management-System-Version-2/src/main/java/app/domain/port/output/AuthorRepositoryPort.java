@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Storage the domain needs for authors. */
 public interface AuthorRepositoryPort {
     void saveAuthor(Author author);
     void updateAuthor(UUID authorId, Author author);

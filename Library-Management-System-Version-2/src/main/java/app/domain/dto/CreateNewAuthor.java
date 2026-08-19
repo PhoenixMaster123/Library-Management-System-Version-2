@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/** The details needed to add an author. */
 @Getter
 @Setter
 @AllArgsConstructor

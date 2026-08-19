@@ -1,0 +1,181 @@
+/* Styling for the two server-rendered pages (login, home). Kept in sync with the
+   React client's palette in ../../../../frontend/src/styles.css. */
+
+:root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #e2e5ea;
+    --text: #1c2024;
+    --muted: #6b7280;
+    --accent: #2f5fd0;
+    --accent-text: #ffffff;
+    --ok-bg: #e7f5ec;
+    --ok-text: #1a7f42;
+    --error-bg: #fdeceb;
+    --error-text: #b4291f;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #14161a;
+        --surface: #1c1f24;
+        --border: #2c313a;
+        --text: #e8eaed;
+        --muted: #9aa2ae;
+        --accent: #7aa2f7;
+        --accent-text: #14161a;
+        --ok-bg: #16301f;
+        --ok-text: #6ed08d;
+        --error-bg: #351b1a;
+        --error-text: #f08a80;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.card {
+    width: min(420px, 100%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.subtitle {
+    margin: 0.25rem 0 1.5rem;
+    color: var(--muted);
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+label {
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+input {
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+}
+
+input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+button {
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+    font-weight: 400;
+}
+
+.alert {
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.alert.error {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
+.alert.ok {
+    background: var(--ok-bg);
+    color: var(--ok-text);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: var(--ok-bg);
+    color: var(--ok-text);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.hint {
+    margin: 1.25rem 0 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+code {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 0.85em;
+}
+
+.links {
+    list-style: none;
+    margin: 1.25rem 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.links a {
+    color: var(--accent);
+}
+
+dl {
+    margin: 1.25rem 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 1rem;
+    font-size: 0.92rem;
+}
+
+dt {
+    color: var(--muted);
+}
+
+dd {
+    margin: 0;
+}

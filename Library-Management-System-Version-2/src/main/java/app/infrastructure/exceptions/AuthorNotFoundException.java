@@ -1,6 +1,7 @@
 package app.infrastructure.exceptions;
 
-public class AuthorNotFoundException extends RuntimeException {
+/** Raised when an author id matches nothing. */
+public class AuthorNotFoundException extends ResourceNotFoundException {
     public AuthorNotFoundException(String message) {
         super(message);
     }

@@ -5,9 +5,12 @@ import app.domain.model.Customer;
 import app.domain.model.Transaction;
 import app.domain.port.output.BookRepositoryPort;
 import app.domain.port.output.CustomerRepositoryPort;
+import app.domain.port.output.LoanEventPort;
+import app.domain.port.output.NotificationPort;
 import app.domain.port.output.TransactionRepositoryPort;
 import app.domain.dto.CreateNewTransaktion;
 import app.domain.services.TransactionService;
+import app.infrastructure.exceptions.BorrowNotAllowedException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -31,7 +34,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("unit")
@@ -42,12 +51,17 @@ class TransactionUseCaseTest {
         private BookRepositoryPort bookRepositoryPort;
         @Mock
         private CustomerRepositoryPort customerRepositoryPort;
+        @Mock
+        private NotificationPort notificationPort;
+        @Mock
+        private LoanEventPort loanEventPort;
         @InjectMocks
         private TransactionService transactionService;
 
         @BeforeEach
         void setUp() {
-            transactionService = new TransactionService(transactionRepositoryPort, bookRepositoryPort, customerRepositoryPort);
+            transactionService = new TransactionService(transactionRepositoryPort, bookRepositoryPort, customerRepositoryPort,
+                    notificationPort, loanEventPort);
         }
 
         @Test
@@ -172,6 +186,83 @@ class TransactionUseCaseTest {
 
 
         @Test
+        void testBorrowBook_AtLoanLimit_ThrowsException() {
+            UUID customerId = UUID.randomUUID();
+            UUID bookId = UUID.randomUUID();
+            Book book = new Book(bookId, "Clean Code", "Robert C. Martin", 2008, true, null);
+            Customer customer = new Customer(customerId, "John Doe", "john.doe@example.com", true);
+
+            when(bookRepositoryPort.searchBookById(bookId)).thenReturn(Optional.of(book));
+            when(customerRepositoryPort.getCustomer(customerId)).thenReturn(Optional.of(customer));
+            when(transactionRepositoryPort.countActiveLoans(customerId))
+                    .thenReturn((long) TransactionService.MAX_ACTIVE_LOANS);
+
+            assertThrows(BorrowNotAllowedException.class,
+                    () -> transactionService.borrowBook(customerId, bookId));
+
+            verify(transactionRepositoryPort, never()).saveTransaction(any(Transaction.class));
+            assertThat(book.isAvailable()).isTrue();
+        }
+
+        @Test
+        void testBorrowBook_BelowLoanLimit_Succeeds() {
+            UUID customerId = UUID.randomUUID();
+            UUID bookId = UUID.randomUUID();
+            Book book = new Book(bookId, "Clean Code", "Robert C. Martin", 2008, true, null);
+            Customer customer = new Customer(customerId, "John Doe", "john.doe@example.com", true);
+
+            when(bookRepositoryPort.searchBookById(bookId)).thenReturn(Optional.of(book));
+            when(customerRepositoryPort.getCustomer(customerId)).thenReturn(Optional.of(customer));
+            when(transactionRepositoryPort.countActiveLoans(customerId))
+                    .thenReturn((long) TransactionService.MAX_ACTIVE_LOANS - 1);
+
+            Transaction transaction = transactionService.borrowBook(customerId, bookId);
+
+            assertThat(transaction.getDueDate()).isEqualTo(LocalDate.now().plusWeeks(2));
+            assertThat(book.isAvailable()).isFalse();
+            verify(transactionRepositoryPort).saveTransaction(transaction);
+        }
+
+        @Test
+        void testExtendLoan_PushesDueDateOutOnce() {
+            UUID transactionId = UUID.randomUUID();
+            Transaction loan = new Transaction(transactionId, LocalDate.now().minusDays(3), null,
+                    LocalDate.now().plusDays(11));
+            when(transactionRepositoryPort.findTransactionById(transactionId)).thenReturn(Optional.of(loan));
+
+            Transaction extended = transactionService.extendLoan(transactionId);
+
+            assertThat(extended.getDueDate()).isEqualTo(LocalDate.now().plusDays(11).plusWeeks(2));
+            assertThat(extended.isExtended()).isTrue();
+            verify(transactionRepositoryPort).updateTransaction(loan);
+        }
+
+        @Test
+        void testExtendLoan_RefusesASecondExtension() {
+            UUID transactionId = UUID.randomUUID();
+            Transaction loan = new Transaction(transactionId, LocalDate.now().minusDays(3), null,
+                    LocalDate.now().plusDays(11));
+            loan.setExtended(true);
+            when(transactionRepositoryPort.findTransactionById(transactionId)).thenReturn(Optional.of(loan));
+
+            assertThrows(BorrowNotAllowedException.class, () -> transactionService.extendLoan(transactionId));
+
+            verify(transactionRepositoryPort, never()).updateTransaction(any(Transaction.class));
+        }
+
+        @Test
+        void testExtendLoan_RefusesWhenAlreadyReturned() {
+            UUID transactionId = UUID.randomUUID();
+            Transaction loan = new Transaction(transactionId, LocalDate.now().minusDays(3),
+                    LocalDate.now(), LocalDate.now().plusDays(11));
+            when(transactionRepositoryPort.findTransactionById(transactionId)).thenReturn(Optional.of(loan));
+
+            assertThrows(BorrowNotAllowedException.class, () -> transactionService.extendLoan(transactionId));
+
+            verify(transactionRepositoryPort, never()).updateTransaction(any(Transaction.class));
+        }
+
+        @Test
         void testBorrowBook_CustomerNotFound_ThrowsException() {
             UUID customerId = UUID.randomUUID();
             UUID bookId = UUID.randomUUID();
@@ -285,7 +376,6 @@ class TransactionUseCaseTest {
 
         @Test
         void testBorrowBookWithDates_CustomerNotFound_ThrowsException() {
-            // Given
             UUID customerId = UUID.randomUUID();
             UUID bookId = UUID.randomUUID();
             LocalDate borrowDate = LocalDate.now().plusDays(1);

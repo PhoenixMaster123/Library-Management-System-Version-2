@@ -1,0 +1,4 @@
+# Applied to every Spring test, so no test class has to remember it.
+# See TestStateResetListener for what it restores and why @DirtiesContext no longer has to.
+org.springframework.test.context.TestExecutionListener=\
+app.support.TestStateResetListener

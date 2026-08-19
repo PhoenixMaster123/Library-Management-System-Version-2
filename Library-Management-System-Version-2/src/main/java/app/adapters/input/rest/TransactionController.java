@@ -5,42 +5,53 @@ import app.domain.dto.TransactionResponse;
 import app.domain.model.Transaction;
 import app.domain.port.input.BookUseCase;
 import app.domain.port.input.TransactionUseCase;
+import app.infrastructure.config.security.CurrentAccount;
+import app.infrastructure.exceptions.BorrowNotAllowedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.*;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+/** Borrowing, returning and extending loans. */
 @RestController
 @RequestMapping("/transactions")
 @Tag(name = "Transaction Controller", description = "Endpoints for managing transactions")
-public class TransactionController {
+@RequiredArgsConstructor
+public class TransactionController extends PaginatedController {
     private final TransactionUseCase transactionUseCase;
     private final BookUseCase bookUseCase;
+    private final CurrentAccount currentAccount;
 
-    @Autowired
-    public TransactionController(TransactionUseCase transactionUseCase, BookUseCase bookUseCase) {
-        this.transactionUseCase = transactionUseCase;
-        this.bookUseCase = bookUseCase;
-    }
-
-    @PostMapping(produces = {"application/single-transaction-response+json;version=1" , MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(produces = {"application/single-transaction-response+json;version=1",
+            MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Create a new transaction")
-    public ResponseEntity<Transaction> createNewTransaction(@Valid @RequestBody CreateNewTransaktion newTransaktion, BindingResult bindingResult) {
+    public ResponseEntity<Transaction> createNewTransaction(
+            @Valid @RequestBody CreateNewTransaktion newTransaktion, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return ResponseEntity.badRequest().body(null);
         }
@@ -49,68 +60,142 @@ public class TransactionController {
         return ResponseEntity.ok(transaction);
     }
 
-    @PostMapping(value = "/returnBook/{bookId}", produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    /**
+     * Closes a loan. Only the member holding the book may return it, or an administrator on their
+     * behalf at the desk - knowing a book id is not enough to close somebody else's loan.
+     */
+    @PostMapping(value = "/returnBook/{bookId}",
+            produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Return a book")
-    public ResponseEntity<TransactionResponse> returnBook(@PathVariable UUID bookId) {
+    public ResponseEntity<TransactionResponse> returnBook(@PathVariable UUID bookId,
+                                                          Authentication authentication) {
         if (bookUseCase.searchById(bookId).isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new TransactionResponse("Book not found.", null));
         }
-        String transactionId = transactionUseCase.returnBook(bookId);
-        return ResponseEntity.ok(new TransactionResponse("Transaction successful.", UUID.fromString(transactionId)));
+
+        Optional<Transaction> activeLoan = transactionUseCase.findActiveLoanForBook(bookId);
+        if (activeLoan.isEmpty()) {
+            return ResponseEntity.badRequest().body(new TransactionResponse(
+                    "Failed to return book: This book has no open loan to return.", null));
+        }
+        if (!isAdmin(authentication) && !isOwner(authentication, activeLoan.get().getCustomerId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new TransactionResponse("You can only return books you have out.", null));
+        }
+
+        try {
+            String transactionId = transactionUseCase.returnBook(bookId);
+            return ResponseEntity.ok(
+                    new TransactionResponse("Transaction successful.", UUID.fromString(transactionId)));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.badRequest()
+                    .body(new TransactionResponse("Failed to return book: " + e.getMessage(), null));
+        }
     }
 
-    @PostMapping(value = "/borrowBook/{customerId}/{bookId}", produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(value = "/borrowBook/{customerId}/{bookId}",
+            produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Borrow a book")
     public ResponseEntity<String> borrowBook(
             @PathVariable UUID customerId,
             @PathVariable UUID bookId) {
+        try {
             transactionUseCase.borrowBook(customerId, bookId);
             return ResponseEntity.ok("Book borrowed successfully.");
+        } catch (BorrowNotAllowedException e) {
+            // A library rule said no; a missing book or customer falls through to the 404 handler.
+            return ResponseEntity.badRequest().body("Failed to borrow book: " + e.getMessage());
+        }
     }
 
-    @GetMapping(value = "/history/{customerId}", produces = {"application/paginated-transactions-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
-    @Operation(summary = "View borrowing history for a customer")
+    /**
+     * Gives the member another loan period. Only the borrower or an administrator may extend, so
+     * knowing a transaction id is not enough to move someone else's due date.
+     */
+    @PostMapping(value = "/{transactionId}/extend", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Extend a loan by one further period")
+    public ResponseEntity<Map<String, Object>> extendLoan(@PathVariable UUID transactionId,
+                                                          Authentication authentication) {
+        Transaction loan = transactionUseCase.findById(transactionId)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found."));
+
+        if (!isAdmin(authentication) && !isOwner(authentication, loan.getCustomerId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "You can only extend your own loans."));
+        }
+
+        Transaction extended = transactionUseCase.extendLoan(transactionId);
+        return ResponseEntity.ok(Map.of(
+                "message", "Loan extended until " + extended.getDueDate(),
+                "dueDate", extended.getDueDate().toString()));
+    }
+
+    /**
+     * The caller's own loans. Members read their history through this rather than by passing a
+     * customer id, so one member can never ask for another's.
+     */
+    @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "View my borrowing history")
+    public ResponseEntity<Map<String, Object>> myHistory(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "borrowDate") String sortBy
+    ) {
+        Optional<UUID> customerId = currentAccount.customerId(authentication);
+        if (customerId.isEmpty()) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "This account has no library membership.",
+                    "data", List.of(),
+                    "totalPages", 0,
+                    "currentPage", 0,
+                    "totalItems", 0));
+        }
+
+        Page<Transaction> loans = transactionUseCase.viewBorrowingHistory(
+                customerId.get(), pageRequest(page, size, sortBy));
+
+        return ResponseEntity.ok(pageBody(loans));
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
+    /** True when the signed-in account's membership is the one the loan belongs to. */
+    private boolean isOwner(Authentication authentication, UUID loanCustomerId) {
+        return currentAccount.customerId(authentication)
+                .filter(id -> id.equals(loanCustomerId))
+                .isPresent();
+    }
+
+    @GetMapping(value = "/history/{customerId}",
+            produces = {"application/paginated-transactions-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "View borrowing history for a customer (administrators)")
     public ResponseEntity<Map<String, Object>> viewBorrowingHistory(
             @PathVariable UUID customerId,
-            @RequestParam Optional<Integer> page,
-            @RequestParam Optional<Integer> size,
-            @RequestParam Optional<String> sortBy
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "borrowDate") String sortBy
     ) {
-        int currentPage = page.orElse(0);
-        int pageSize = size.orElse(5);
-        String sortField = sortBy.orElse("borrowDate");
-
-        PageRequest pageable = PageRequest.of(currentPage, pageSize, Sort.Direction.ASC, sortField);
+        PageRequest pageable = pageRequest(page, size, sortBy);
         Page<Transaction> transactionsPage = transactionUseCase.viewBorrowingHistory(customerId, pageable);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("self", "<" + linkTo(methodOn(TransactionController.class)
-                .viewBorrowingHistory(customerId, Optional.of(currentPage), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"self\"");
+        HttpHeaders headers = pageLinks(transactionsPage, p -> methodOn(TransactionController.class)
+                .viewBorrowingHistory(customerId, p, size, sortBy));
 
-        if (transactionsPage.hasPrevious()) {
-            headers.add("prev", "<" + linkTo(methodOn(TransactionController.class)
-                    .viewBorrowingHistory(customerId, Optional.of(currentPage - 1), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"prev\"");
-        }
-        if (transactionsPage.hasNext()) {
-            headers.add("next", "<" + linkTo(methodOn(TransactionController.class)
-                    .viewBorrowingHistory(customerId, Optional.of(currentPage + 1), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"next\"");
-        }
-
+        // Alone among the paginated endpoints, this one answers the empty case without the headers.
         if (transactionsPage.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("message", "No transactions found for this customer"));
         }
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("data", transactionsPage.getContent());
-        response.put("totalPages", transactionsPage.getTotalPages());
-        response.put("currentPage", transactionsPage.getNumber());
-        response.put("totalItems", transactionsPage.getTotalElements());
-
-        return ResponseEntity.ok().headers(headers).body(response);
+        return ResponseEntity.ok().headers(headers).body(pageBody(transactionsPage));
     }
 
-    @GetMapping(value = "/{id}", produces = {"application/single-transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/{id}",
+            produces = {"application/single-transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Get a single transaction by ID")
     public ResponseEntity<Map<String, Object>> getTransactionById(@PathVariable UUID id) {
         Optional<Transaction> transactionOpt = transactionUseCase.findById(id);
