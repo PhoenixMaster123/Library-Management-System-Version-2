@@ -1,9 +1,15 @@
 package springboot.web;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import springboot.model.Notification;
 import springboot.model.NotificationPreference;
 import springboot.service.NotificationService;
@@ -18,21 +24,20 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
+@RequiredArgsConstructor
 public class NotificationController {
 
     private final NotificationService notificationService;
 
-    @Autowired
-    public NotificationController(NotificationService notificationService) {
-        this.notificationService = notificationService;
-    }
-
     @PostMapping("/preferences")
-    public ResponseEntity<NotificationPreferenceResponse> upsertNotificationPreference(@RequestBody UpsertNotificationPreference upsertNotificationPreference) {
+    public ResponseEntity<NotificationPreferenceResponse> upsertNotificationPreference(
+            @Valid @RequestBody UpsertNotificationPreference upsertNotificationPreference) {
 
-        NotificationPreference notificationPreference = notificationService.upsertPreference(upsertNotificationPreference);
+        NotificationPreference notificationPreference =
+                notificationService.upsertPreference(upsertNotificationPreference);
 
-        NotificationPreferenceResponse responseDto = DtoMapper.fromNotificationPreference(notificationPreference);
+        NotificationPreferenceResponse responseDto =
+                DtoMapper.fromNotificationPreference(notificationPreference);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -40,11 +45,13 @@ public class NotificationController {
     }
 
     @GetMapping("/preferences")
-    public ResponseEntity<NotificationPreferenceResponse> getUserNotificationPreference(@RequestParam(name = "userId")UUID userId) {
+    public ResponseEntity<NotificationPreferenceResponse> getUserNotificationPreference(
+            @RequestParam(name = "userId") UUID userId) {
 
         NotificationPreference notificationPreference = notificationService.getPreferenceByUserId(userId);
 
-        NotificationPreferenceResponse responseDto = DtoMapper.fromNotificationPreference(notificationPreference);
+        NotificationPreferenceResponse responseDto =
+                DtoMapper.fromNotificationPreference(notificationPreference);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -52,30 +59,31 @@ public class NotificationController {
     }
 
     @PostMapping
-    public ResponseEntity<NotificationResponse> sendNotification(@RequestBody NotificationRequest notificationRequest) {
+    public ResponseEntity<NotificationResponse> sendNotification(
+            @Valid @RequestBody NotificationRequest notificationRequest) {
 
-        // Entity
         Notification notification = notificationService.sendNotification(notificationRequest);
 
-        // DTO
         NotificationResponse response = DtoMapper.fromNotification(notification);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
-
     }
 
-    //@GetMapping
-    //public ResponseEntity<List<NotificationResponse>> getNotificationHistory(@RequestParam(name = "userId") UUID userId) {
+    @GetMapping
+    public ResponseEntity<List<NotificationResponse>> getNotificationHistory(
+            @RequestParam(name = "userId") UUID userId) {
 
-//        List<NotificationResponse> notificationHistory = notificationService.getNotificationHistory(userId).stream().map(DtoMapper::fromNotification);
+        List<NotificationResponse> notificationHistory = notificationService.getNotificationHistory(userId)
+                .stream()
+                .map(DtoMapper::fromNotification)
+                .toList();
 
-//        return ResponseEntity
-//                .status(HttpStatus.OK)
-//                .body(notificationHistory);
-
-    //}
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(notificationHistory);
+    }
 
     @GetMapping("/test")
     public ResponseEntity<String> getHelloWorld() {
