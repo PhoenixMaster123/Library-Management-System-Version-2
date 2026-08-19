@@ -1,0 +1,10 @@
+{
+  /* Two projects, because the code runs in two places. tsconfig.app.json is the browser bundle;
+     tsconfig.node.json is the config files and the Playwright suite, which run in Node. Splitting
+     them is what keeps `process` available to the tooling without leaking it into app code. */
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}

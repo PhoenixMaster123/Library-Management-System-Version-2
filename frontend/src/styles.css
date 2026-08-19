@@ -1,0 +1,1553 @@
+/* ---------------------------------------------------------------------------
+   Design tokens. Light is the default; dark is a token swap so every component
+   below is written once. The server-rendered pages in
+   ../../Library-Management-System-Version-2/src/main/resources/static/css/pages.css
+   use the same palette so the two halves of the app look like one product.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --border: #e3e6ea;
+  --text: #171a1f;
+  --muted: #667085;
+  --accent: #2f5fd0;
+  --accent-hover: #2850b4;
+  --accent-soft: #e8eefc;
+  --accent-contrast: #ffffff;
+  --ok-bg: #e6f5ec;
+  --ok-text: #16794c;
+  --warn-bg: #fdf1dc;
+  --warn-text: #9a6100;
+  --danger-bg: #fdecea;
+  --danger-text: #b4291f;
+  --ring: rgba(47, 95, 208, 0.35);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.09);
+  --glow: rgba(47, 95, 208, 0.13);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101216;
+    --surface: #191c22;
+    --surface-2: #21252d;
+    --border: #2b303a;
+    --text: #e9ebef;
+    --muted: #9aa2ae;
+    --accent: #7aa2f7;
+    --accent-hover: #93b4ff;
+    --accent-soft: #1d2941;
+    --accent-contrast: #101216;
+    --ok-bg: #16301f;
+    --ok-text: #6ed08d;
+    --warn-bg: #33270f;
+    --warn-text: #e3b341;
+    --danger-bg: #341b1a;
+    --danger-text: #f08a80;
+    --ring: rgba(122, 162, 247, 0.4);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --glow: rgba(122, 162, 247, 0.1);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------- shell --------------------------------- */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  min-height: 60px;
+  padding: 0.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 650;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #9b6cf0));
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-links a {
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nav-links a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.nav-links a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.user-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.user-name small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+/* --------------------------------- pages --------------------------------- */
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.page-head h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.page-head .sub {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.search input {
+  width: 100%;
+  padding-left: 2.2rem;
+}
+
+.search .icon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  display: grid;
+}
+
+/* --------------------------------- table --------------------------------- */
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+thead th {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.9rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.cell-title {
+  font-weight: 550;
+}
+
+.empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.empty strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+/* skeleton rows keep the table from collapsing while a page loads */
+.skeleton {
+  display: block;
+  height: 0.85rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--surface-2), var(--border), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ------------------------------- pagination ------------------------------ */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 1.15rem;
+}
+
+.pagination-summary {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.pagination-summary strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+/* Fixed width so the row does not shuffle sideways as the page number gains a digit. */
+.page-btn {
+  min-width: 2.15rem;
+  padding: 0.45rem 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.page-btn.is-current {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.pagination-gap {
+  padding: 0 0.2rem;
+  color: var(--muted);
+}
+
+.pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pagination-size select {
+  width: auto;
+  padding: 0.35rem 0.5rem;
+}
+
+.page-info {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  .pagination {
+    justify-content: center;
+  }
+}
+
+/* -------------------------------- controls ------------------------------- */
+
+input,
+select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --------------------------------- badges -------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge.ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.badge.out {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.badge.role,
+.badge.accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+/* A loan of the reader's own reads differently from one they can only wait for. */
+.badge.mine {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* --------------------------------- alerts -------------------------------- */
+
+.alert {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.alert.error {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.alert.ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+}
+
+.notice {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.notice h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1.2rem;
+}
+
+.notice p {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+/* ---------------------------------- auth --------------------------------- */
+
+.auth {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(60rem 30rem at 50% -10rem, var(--glow), transparent 70%),
+    var(--bg);
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 2rem;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 650;
+  margin-bottom: 1.25rem;
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: 1.45rem;
+}
+
+.auth-card .sub {
+  margin: 0.25rem 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+}
+
+.field label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.field .help {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.switch-link {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.89rem;
+  color: var(--muted);
+}
+
+.hint {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.mono {
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+  font-size: 0.86em;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error-text {
+  color: var(--danger-text);
+}
+
+@media (max-width: 600px) {
+  .nav-inner {
+    padding: 0.5rem 1rem;
+  }
+
+  .content {
+    padding: 1.5rem 1rem 2.5rem;
+  }
+
+  .user-name {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Book detail and catalogue management
+   --------------------------------------------------------------------------- */
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+.row-clickable:hover td {
+  background: var(--surface-2);
+}
+
+.row-clickable:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.cell-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.btn-ghost.danger {
+  color: var(--danger-text);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(16, 24, 40, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: min(34rem, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.detail-head {
+  margin-bottom: 1rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.9rem;
+  margin: 0 0 1.25rem;
+}
+
+.detail-grid dt {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+
+.detail-grid dd {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.detail-section {
+  margin: 0 0 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.author-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.author-list p {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  resize: vertical;
+}
+
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Loans: due-date states and the admin filter */
+
+.badge.warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: var(--accent);
+}
+
+.cell-actions small,
+td small.muted {
+  font-size: 0.8rem;
+}
+
+section > .detail-section:first-of-type {
+  margin-top: 0.5rem;
+}
+
+/* Account menu, tabs and book blurb */
+
+.user-menu {
+  position: relative;
+}
+
+button.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.user-chip:hover,
+button.user-chip[aria-expanded='true'] {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.user-chip .caret {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 40;
+  min-width: 12rem;
+  padding: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.menu-head {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.3rem;
+}
+
+.menu-head small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--surface-2);
+}
+
+.menu button.danger {
+  color: var(--danger-text);
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 0.3rem 0;
+  background: var(--border);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs a {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.tabs a:hover {
+  color: var(--text);
+}
+
+.tabs a.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.narrow-form {
+  max-width: 22rem;
+}
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.book-blurb {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Catalogue import picker */
+
+.candidate-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.candidate-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.candidate-list li {
+  border: 1px solid transparent;
+  border-radius: 9px;
+}
+
+.candidate-list li.picked {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.candidate-list label {
+  display: grid;
+  grid-template-columns: auto 2.2rem 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+}
+
+.candidate-list li:not(.picked) label:hover {
+  background: var(--surface-2);
+  border-radius: 9px;
+}
+
+.candidate-list input {
+  accent-color: var(--accent);
+}
+
+.candidate-list .cover {
+  width: 2.2rem;
+  height: 3.1rem;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+}
+
+.candidate-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.candidate-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-list small {
+  font-size: 0.78rem;
+}
+
+/* Placeholder where a catalogue result has no cover, so rows stay aligned. */
+.cover-empty {
+  display: block;
+  width: 2.2rem;
+  height: 3.1rem;
+  border-radius: 3px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+}
+
+/* -------------------------------- settings -------------------------------
+   A rail beside a column of cards rather than settings hidden behind tabs: a
+   member can see everything the library can do before changing any of it. The
+   one piece of colour is the switch, because whether reminders are on is the
+   only thing on this page that is a decision rather than a fact.
+   ------------------------------------------------------------------------- */
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.settings-rail {
+  position: sticky;
+  top: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.settings-rail a {
+  padding: 0.5rem 0.75rem;
+  border-radius: 7px;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.settings-rail a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.settings-rail a.is-active {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.settings-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 660px;
+}
+
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem 1.35rem 0.35rem;
+  /* Cleared by the sticky navigation, so an anchor jump does not land under it. */
+  scroll-margin-top: 84px;
+}
+
+.settings-card-head {
+  padding-bottom: 1rem;
+}
+
+.settings-card-head h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+}
+
+.settings-card-head p {
+  margin: 0.2rem 0 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.setting-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.setting-label {
+  font-size: 0.9375rem;
+  font-weight: 550;
+}
+
+.setting-help {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 42ch;
+}
+
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.setting-value {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 0 1.25rem;
+  border-top: 1px solid var(--border);
+  max-width: 22rem;
+}
+
+.settings-form .btn {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+}
+
+/* ------------------------------ switch ----------------------------------- */
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 23px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.switch:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.switch.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease;
+}
+
+.switch.is-on .switch-thumb {
+  transform: translateX(17px);
+}
+
+.switch-state {
+  min-width: 1.7rem;
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: var(--muted);
+}
+
+.switch.is-on + .switch-state {
+  color: var(--text);
+}
+
+/* Reserves its own width so the row does not shift when "Saved" appears. */
+.save-state {
+  min-width: 3.5rem;
+  text-align: right;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch-thumb,
+  .settings-rail a {
+    transition: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .settings-rail {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.25rem;
+  }
+
+  .settings-rail a {
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 7px 7px 0 0;
+    white-space: nowrap;
+  }
+
+  .settings-rail a.is-active {
+    border-left-color: transparent;
+    border-bottom-color: var(--accent);
+  }
+}
+
+@media (max-width: 560px) {
+  .setting-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+}
+
+/* -------------------------------- discover ------------------------------- */
+
+.discover-search {
+  display: flex;
+  gap: 0.6rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.discover-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1rem;
+}
+
+.discover-card {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.discover-cover {
+  flex-shrink: 0;
+  width: 62px;
+  height: 92px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+
+/* The shared placeholder is row-sized; a card needs the cover's own footprint. */
+.discover-cover.cover-empty {
+  width: 62px;
+  height: 92px;
+}
+
+.discover-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.discover-title {
+  font-size: 0.9375rem;
+  line-height: 1.3;
+  /* Long titles wrap to two lines and then stop, so cards stay the same height. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.discover-body .muted {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.discover-body .small {
+  font-size: 0.78rem;
+}
+
+.discover-body .btn,
+.discover-body .badge {
+  margin-top: auto;
+}
+
+.small {
+  font-size: 0.8rem;
+}
+
+/* --------------------------- catalogue table ----------------------------
+   Real catalogue data is not tidy: an anthology can list sixty contributors,
+   and left alone that one row is taller than the twenty-four around it. Column
+   widths plus a two-line clamp keep every row the same shape.
+   ------------------------------------------------------------------------ */
+
+/* Fixed layout means a column never grows to fit its contents, so every width
+   below has to be wide enough for the widest thing that column can hold: a
+   hyphenated ISBN-13, and a status pill that is `white-space: nowrap` and so
+   cannot wrap or shrink. The reader view carries five columns. */
+.books-table {
+  table-layout: fixed;
+  min-width: 840px;
+}
+
+.books-table th.col-title { width: 30%; }
+.books-table th.col-author { width: 27%; }
+.books-table th.col-isbn { width: 19%; }
+.books-table th.col-year { width: 9%; }
+.books-table th.col-status { width: 15%; }
+
+/* Admins get a sixth column holding two buttons. Sharing the same widths as the
+   reader view left it ~50px wide, and since nothing here clips, the neighbouring
+   "Available" pill overflowed its cell and painted straight over Edit. */
+.books-table.has-actions {
+  min-width: 1000px;
+}
+
+.books-table.has-actions th.col-title { width: 24%; }
+.books-table.has-actions th.col-author { width: 22%; }
+.books-table.has-actions th.col-isbn { width: 16%; }
+.books-table.has-actions th.col-year { width: 6%; }
+.books-table.has-actions th.col-status { width: 12%; }
+.books-table.has-actions th.col-actions { width: 20%; }
+
+.cell-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------- insights ------------------------------
+   Four headline figures over a ranked table. The figures are read from
+   Analytics-Service, so they can be genuinely absent - the page says so rather
+   than rendering zeros, which would read as "this library lends nothing".
+   ------------------------------------------------------------------------ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* Tabular figures so the four tiles do not jitter as the numbers gain digits. */
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-skeleton {
+  width: 3ch;
+  height: 1.4rem;
+}
+
+.stat-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 650;
+  margin: 0 0 0.6rem;
+}
+
+/* Same fixed layout as the catalogue table, and the same rule: a column never
+   grows to fit, so each width has to hold the widest value it can be given. */
+.stats-table {
+  table-layout: fixed;
+  min-width: 720px;
+}
+
+.stats-table th.col-rank { width: 3.5rem; }
+.stats-table th.col-title { width: 40%; }
+.stats-table th.col-isbn { width: 11.5rem; }
+.stats-table th.col-num { width: 6.5rem; }
+
+.stats-table .col-num,
+.stats-table .num {
+  text-align: right;
+}
+
+.stats-table .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table .rank {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.footnote {
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.footnote code {
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+  font-size: 0.95em;
+}
+
+/* An alert that offers a way out sits its action beside the text rather than under it. */
+.alert.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.alert-action {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  color: inherit;
+  border-color: currentColor;
+  flex-shrink: 0;
+}
+
+/* A warning is not an error: the page still has something to show, it just cannot be trusted
+   as current. Distinct from .alert.error so the two are not read as the same severity. */
+.alert.warn {
+  display: block;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border: 1px solid color-mix(in srgb, var(--warn-text) 25%, transparent);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
