@@ -218,6 +218,18 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      # Without this the build succeeds and publishes a site whose every request goes back to
+      # GitHub Pages, which serves static files only and answers 405 to a login. Failing here says
+      # what is wrong; the deployed site could only say "that request could not be completed".
+      - name: Require an API origin
+        if: vars.API_BASE_URL == ''
+        run: |
+          echo "::error::API_BASE_URL is not set, so the published site would have no backend to talk to."
+          echo "Set it under Settings > Secrets and variables > Actions > Variables to the origin"
+          echo "of a publicly reachable, HTTPS backend - and add that origin to LIBRARY_CORS_ORIGINS"
+          echo "on the backend, or the browser will block every call."
+          exit 1
+
       - name: Build
         working-directory: frontend
         env:
