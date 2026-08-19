@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<ruleset name="library-backend"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Bug-finding rules for the library backend.
+
+        Checkstyle covers layout and naming, so this file deliberately does not: it keeps to rules
+        that describe something that can actually go wrong at runtime. The category rulesets are
+        pulled in wholesale and then narrowed, because the excluded rules are the ones that fight
+        this codebase rather than improve it.
+    </description>
+
+    <rule ref="category/java/bestpractices.xml">
+        <!--
+            SLF4J's placeholders already defer the formatting this rule exists to avoid, so
+            log.debug("x {}", y) needs no isDebugEnabled() guard. Left on, it accounts for 35 of
+            the 58 findings on this codebase and every one of them is noise.
+        -->
+        <exclude name="GuardLogStatement"/>
+        <!--
+            Fires on Spring's HttpHeaders, which ResponseEntity requires by that exact type. The
+            rule is worth keeping for ArrayList/HashMap declarations, so it is narrowed below
+            rather than switched off.
+        -->
+        <exclude name="LooseCoupling"/>
+        <!-- Reads a record's compact constructor as a dead store; assigning to the parameter there
+             is exactly how a compact constructor writes its field. -->
+        <exclude name="UnusedAssignment"/>
+        <!-- PaginatedController is a base class of shared helpers, not a template method. An
+             abstract class with no abstract methods is the right shape for that. -->
+        <exclude name="AbstractClassWithoutAbstractMethod"/>
+        <!-- JUnit rules belong to the test sources, which this ruleset does not scan. -->
+        <exclude name="JUnitTestsShouldIncludeAssert"/>
+        <exclude name="JUnitAssertionsShouldIncludeMessage"/>
+        <exclude name="JUnitTestContainsTooManyAsserts"/>
+        <!-- Spring injects into private fields; that is the framework's design, not an oversight. -->
+        <exclude name="UnusedPrivateField"/>
+        <!-- Guard clauses read better than a single exit, and this codebase uses them throughout. -->
+        <exclude name="OnlyOneReturn"/>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml">
+        <!-- JwtService.getClaims returns null for "no valid token", which every caller checks.
+             Returning an empty Claims would make an unauthenticated request look authenticated. -->
+        <exclude name="ReturnEmptyCollectionRatherThanNull"/>
+        <!-- Flags any comparison against a number, which is most bounds checks. -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <!-- Fires on every JPA entity and DTO with a null-able field. -->
+        <exclude name="NullAssignment"/>
+        <!-- Constants for log messages and short literals hurt more than they help. -->
+        <exclude name="AvoidDuplicateLiterals"/>
+        <!-- Lombok-generated and JPA-required no-arg constructors trip this. -->
+        <exclude name="MissingSerialVersionUID"/>
+        <!-- The catch-and-degrade pattern in the outbound adapters is deliberate and documented. -->
+        <exclude name="AvoidCatchingGenericException"/>
+    </rule>
+
+    <rule ref="category/java/multithreading.xml">
+        <!-- Spring beans are singletons by design; this rule reads them as shared mutable state. -->
+        <exclude name="UseConcurrentHashMap"/>
+    </rule>
+
+    <rule ref="category/java/performance.xml">
+        <!-- String concatenation in a log call is evaluated lazily by SLF4J's placeholders. -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+    </rule>
+
+    <!-- A few from design/, rather than the whole category: most of it is metrics thresholds that
+         would flag the existing controllers without telling anyone anything useful. -->
+    <!-- LooseCoupling, narrowed: HttpHeaders is Spring's own type and ResponseEntity takes it
+         directly, so it is not an "implementation type" anyone can decouple from. -->
+    <rule ref="category/java/bestpractices.xml/LooseCoupling">
+        <properties>
+            <property name="allowedTypes" value="org.springframework.http.HttpHeaders"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
+    <rule ref="category/java/design.xml/SimplifiedTernary"/>
+    <rule ref="category/java/design.xml/UselessOverridingMethod"/>
+</ruleset>

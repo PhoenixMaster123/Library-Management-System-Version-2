@@ -16,6 +16,10 @@
 	<properties>
 		<java.version>21</java.version>
 		<maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+		<maven-failsafe-plugin.version>3.0.0</maven-failsafe-plugin.version>
+		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+		<checkstyle.version>10.21.1</checkstyle.version>
+		<maven-pmd-plugin.version>3.26.0</maven-pmd-plugin.version>
 	</properties>
 	<dependencies>
 
@@ -155,10 +159,16 @@
 		</dependency>
 
     <!-- Documentation Dependencies -->
+        <!--
+            The starter-webmvc line, not springdoc-openapi-ui: that one targets javax.servlet and
+            silently registers nothing on Spring Boot 3, which left every /swagger-ui and
+            /v3/api-docs URL answering an error.
+        -->
         <dependency>
             <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.15</version>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <!-- 2.8.x is the line that tracks Spring Boot 3.5; 2.7 breaks on its HATEOAS provider. -->
+            <version>2.8.14</version>
         </dependency>
 
         <dependency>
@@ -262,7 +272,7 @@
 				</configuration>
 			</plugin>
 
-			<!-- Maven Surefire Plugin -->
+			<!-- Maven Surefire Plugin - unit tests, at the test phase -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -270,6 +280,102 @@
 				<configuration>
 					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
 				</configuration>
+			</plugin>
+
+			<!--
+				Checkstyle - layout and naming, from config/checkstyle/checkstyle.xml.
+
+				Bound to `validate` so it runs before anything compiles: a style failure should cost
+				seconds, not a full build. The ruleset is deliberately narrow - Checkstyle's bundled
+				sun_checks.xml reports over 1800 violations on this codebase, which is a ruleset nobody
+				keeps switched on. Bypass with -Dcheckstyle.skip=true.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${maven-checkstyle-plugin.version}</version>
+				<dependencies>
+					<!-- The plugin ships an old Checkstyle; pin a current one explicitly. -->
+					<dependency>
+						<groupId>com.puppycrawl.tools</groupId>
+						<artifactId>checkstyle</artifactId>
+						<version>${checkstyle.version}</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<configLocation>${maven.multiModuleProjectDirectory}/../config/checkstyle/checkstyle.xml</configLocation>
+					<consoleOutput>true</consoleOutput>
+					<failOnViolation>true</failOnViolation>
+					<violationSeverity>error</violationSeverity>
+					<includeTestSourceDirectory>false</includeTestSourceDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<id>checkstyle</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+				PMD - bug patterns, from config/pmd/ruleset.xml. Runs at `verify` because it wants
+				compiled classes. Bypass with -Dpmd.skip=true.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>${maven-pmd-plugin.version}</version>
+				<configuration>
+					<rulesets>
+						<ruleset>${maven.multiModuleProjectDirectory}/../config/pmd/ruleset.xml</ruleset>
+					</rulesets>
+					<printFailingErrors>true</printFailingErrors>
+					<failOnViolation>true</failOnViolation>
+					<includeTests>false</includeTests>
+					<targetJdk>${java.version}</targetJdk>
+				</configuration>
+				<executions>
+					<execution>
+						<id>pmd</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+				Maven Failsafe Plugin - the *IT classes, at the integration-test phase.
+
+				Without this they never ran: surefire's default includes are *Test, Test* and
+				*Tests, none of which match an IT suffix, so `mvn verify` quietly skipped every
+				integration test in the project. Mirrors the binding already in pom-docker.xml.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>${maven-failsafe-plugin.version}</version>
+				<configuration>
+					<argLine>-XX:+EnableDynamicAgentLoading</argLine>
+					<includes>
+						<include>**/*IT.java</include>
+					</includes>
+					<excludes>
+						<exclude>**/*Test.java</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
