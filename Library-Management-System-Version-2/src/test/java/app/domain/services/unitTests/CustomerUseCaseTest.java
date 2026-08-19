@@ -18,9 +18,15 @@ import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Tag("unit")
@@ -116,32 +122,26 @@ public class CustomerUseCaseTest {
 
         @Test
         void testSearchCustomer() {
-            // Given
             String query = "John";
             Pageable pageable = PageRequest.of(0, 10);
             Page<Customer> expectedPage = mock(Page.class);
             when(customerRepositoryPort.searchCustomer(query, pageable)).thenReturn(expectedPage);
 
-            // When
             Page<Customer> actualPage = customerService.searchCustomer(query, pageable);
 
-            // Then
             assertThat(actualPage).isEqualTo(expectedPage);
             verify(customerRepositoryPort).searchCustomer(query, pageable);
         }
 
         @Test
         void testUpdatePrivileges_CustomerFound() {
-            // Given
             UUID customerId = UUID.randomUUID();
-            Customer mockCustomer = mock(Customer.class); // Mock the Customer object
+            Customer mockCustomer = mock(Customer.class);
             when(customerRepositoryPort.getCustomer(customerId)).thenReturn(Optional.of(mockCustomer));
             boolean newPrivileges = true;
 
-            // When
             customerService.updatePrivileges(customerId, newPrivileges);
 
-            // Then
             verify(customerRepositoryPort).getCustomer(customerId);
             verify(mockCustomer).setPrivileges(newPrivileges); // Verify on the mock
             verify(customerRepositoryPort).updatePrivileges(mockCustomer);
@@ -149,30 +149,24 @@ public class CustomerUseCaseTest {
 
         @Test
         void testUpdatePrivileges_CustomerNotFound() {
-            // Given
             UUID customerId = UUID.randomUUID();
             when(customerRepositoryPort.getCustomer(customerId)).thenReturn(Optional.empty());
             boolean newPrivileges = true;
 
-            // When
             assertThrows(EntityNotFoundException.class, () -> customerService.updatePrivileges(customerId, newPrivileges));
 
-            // Then
             verify(customerRepositoryPort).getCustomer(customerId);
             verify(customerRepositoryPort, never()).updatePrivileges(any(Customer.class));
         }
 
         @Test
         void testUpdateCustomer_CustomerFound() {
-            // Given
             UUID customerId = UUID.randomUUID();
             Customer customer = new Customer(customerId, "John Doe", "john.doe@example.com", true);
             when(customerRepositoryPort.getCustomer(customerId)).thenReturn(Optional.of(customer));
 
-            // When
             customerService.updateCustomer(customer);
 
-            // Then
             verify(customerRepositoryPort).getCustomer(customerId);
             verify(customerRepositoryPort).updateCustomer(customer);
         }

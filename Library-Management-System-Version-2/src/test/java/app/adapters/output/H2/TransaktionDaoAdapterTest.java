@@ -25,9 +25,18 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 @Tag("unit")
@@ -214,7 +223,7 @@ public class TransaktionDaoAdapterTest {
 
         assertTrue(transaction.isPresent());
         assertEquals(transactionId, transaction.get().getTransactionId());
-        assertEquals(customerId, transaction.get().getCustomer().getCustomerId());  // Check that the customer ID is correctly mapped
+        assertEquals(customerId, transaction.get().getCustomer().getCustomerId());
 
         Set<Author> mappedAuthors = transaction.get().getBook().getAuthors();
         assertNotNull(mappedAuthors);

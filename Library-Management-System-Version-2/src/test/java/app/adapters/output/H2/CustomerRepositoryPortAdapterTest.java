@@ -26,7 +26,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(MockitoExtension.class)
 @Tag("unit")
 public class CustomerRepositoryPortAdapterTest {
@@ -140,7 +145,12 @@ public class CustomerRepositoryPortAdapterTest {
     public void testGetCustomerByName_Found() {
         String name = "John Doe";
         UUID transactionId = UUID.randomUUID();
-        TransactionEntity transaction = new TransactionEntity(transactionId, LocalDate.now(), LocalDate.now(), LocalDate.ofYearDay(2025,1), null, null);
+        TransactionEntity transaction = TransactionEntity.builder()
+                .transactionId(transactionId)
+                .borrowDate(LocalDate.now())
+                .returnDate(LocalDate.now())
+                .dueDate(LocalDate.ofYearDay(2025, 1))
+                .build();
 
         CustomerEntity customerEntity = new CustomerEntity(
                 UUID.randomUUID(), name, "john.doe@example.com", true, new ArrayList<>());
