@@ -85,6 +85,13 @@ services:
   mysql:
     image: mysql:8.4
     <<: *hardening
+    # The entrypoint starts as root and drops to the mysql user, which needs these four back.
+    # Still far tighter than the default set, but ALL on its own makes mysqld abort on setgid.
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
     # Not published: only Notification-Service needs it.
     expose: ["3306"]
     environment:
@@ -95,7 +102,7 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 10s
       timeout: 5s
       retries: 12
