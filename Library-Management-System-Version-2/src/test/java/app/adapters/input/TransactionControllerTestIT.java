@@ -125,6 +125,7 @@ class TransactionControllerTestIT {
                 .andExpect(status().isBadRequest());
     }
     @Test
+    @WithMockUser(username = "member")
     void testBorrowBook() throws Exception {
         UUID customerId = customer.getCustomerId();
         UUID bookId = book.getBookId();
@@ -137,6 +138,7 @@ class TransactionControllerTestIT {
         assertEquals(1, transactionCount);
     }
     @Test
+    @WithMockUser(username = "member")
     void testBorrowBook_bookNotAvailable() throws Exception {
         UUID customerId = customer.getCustomerId();
         UUID bookId = book.getBookId();
@@ -291,5 +293,17 @@ class TransactionControllerTestIT {
         customerRepository.deleteAll();
         bookRepository.deleteAll();
         authorRepository.deleteAll();
+    }
+
+    /** A member borrowing against somebody else's membership would spend their loan limit. */
+    @Test
+    @WithMockUser(username = "member", roles = "USER")
+    void borrowingAgainstAnotherMembershipIsRefused() throws Exception {
+        Customer otherMember = customerUseCase.createNewCustomer(
+                new CreateNewCustomer("Someone Else", "someone.else@example.com", true));
+
+        mockMvc.perform(post("/transactions/borrowBook/" + otherMember.getCustomerId() + "/"
+                        + book.getBookId()))
+                .andExpect(status().isForbidden());
     }
 }
