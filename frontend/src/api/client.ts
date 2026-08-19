@@ -9,6 +9,12 @@ import type { Page, Session } from '../types/domain'
  */
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '/backend'
 
+/**
+ * True when the build knew it was going somewhere with no backend to talk to - a static host with
+ * no API origin configured. The UI says so rather than letting every sign-in fail unexplained.
+ */
+export const BACKEND_UNCONFIGURED = import.meta.env.VITE_BACKEND_UNCONFIGURED === 'true'
+
 const TOKEN_KEY = 'library.jwt'
 const SESSION_KEY = 'library.session'
 

@@ -21,6 +21,11 @@ RUN addgroup -S library && adduser -S -G library -H -s /sbin/nologin library
 WORKDIR /app
 COPY --from=build --chown=root:root --chmod=444 /build/app.jar /app/app.jar
 
+# The H2 file lives here. Created now and owned by the app user so that a named volume mounted over
+# it inherits that ownership - otherwise the volume arrives root-owned and the process cannot write.
+RUN mkdir -p /app/data && chown library:library /app/data
+VOLUME ["/app/data"]
+
 # Owned by root and read-only to the account that runs it: the process cannot rewrite its own jar.
 USER library
 

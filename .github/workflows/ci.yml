@@ -218,17 +218,20 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      # Without this the build succeeds and publishes a site whose every request goes back to
-      # GitHub Pages, which serves static files only and answers 405 to a login. Failing here says
-      # what is wrong; the deployed site could only say "that request could not be completed".
-      - name: Require an API origin
-        if: vars.API_BASE_URL == ''
+      # Deploying without a backend is a legitimate thing to want - the UI is still worth looking
+      # at. What is not acceptable is a site that looks broken, so the build passes the fact down
+      # to the app, which then says so on the sign-in page instead of failing a login mysteriously.
+      - name: Note whether an API origin is configured
+        id: api
         run: |
-          echo "::error::API_BASE_URL is not set, so the published site would have no backend to talk to."
-          echo "Set it under Settings > Secrets and variables > Actions > Variables to the origin"
-          echo "of a publicly reachable, HTTPS backend - and add that origin to LIBRARY_CORS_ORIGINS"
-          echo "on the backend, or the browser will block every call."
-          exit 1
+          if [ -z "${{ vars.API_BASE_URL }}" ]; then
+            echo "::warning::API_BASE_URL is not set. The site will publish, but it has no backend"
+            echo "::warning::to sign in against. Set it under Settings > Secrets and variables >"
+            echo "::warning::Actions > Variables, and add the same origin to LIBRARY_CORS_ORIGINS."
+            echo "unconfigured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "unconfigured=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build
         working-directory: frontend
@@ -236,6 +239,7 @@ jobs:
           # The site is served from https://<owner>.github.io/<repo>/, so assets need that prefix.
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
           VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
+          VITE_BACKEND_UNCONFIGURED: ${{ steps.api.outputs.unconfigured }}
         run: npm run build
 
       - name: Add an SPA fallback

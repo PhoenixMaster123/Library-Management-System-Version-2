@@ -35,10 +35,14 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       NOTIFICATION_SERVICE_URL: http://notification:9093/api/v1/notifications
       ANALYTICS_SERVICE_URL: http://analytics:9095/api/v1/analytics
+      LIBRARY_DB_URL: jdbc:h2:file:/app/data/library_ms
     read_only: true
     tmpfs:
       # The JVM and Tomcat want somewhere to write; everything else stays read-only.
       - /tmp
+    volumes:
+      # The one writable path: the catalogue and its members outlive the container without it.
+      - backend-data:/app/data
     depends_on:
       kafka:
         condition: service_healthy
@@ -139,6 +143,7 @@ services:
     networks: [library]
 
 volumes:
+  backend-data:
   mysql-data:
   kafka-data:
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { BACKEND_UNCONFIGURED } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { BrandMark } from '../components/Layout'
 
@@ -44,6 +45,13 @@ export function LoginPage() {
 
         <h1>Welcome back</h1>
         <p className="sub">Sign in with your username and password.</p>
+
+        {BACKEND_UNCONFIGURED && (
+          <p className="alert warn" role="status">
+            <strong>Preview only.</strong> This deployment has no backend configured, so signing in
+            and registering will not work. The pages themselves are here to look at.
+          </p>
+        )}
 
         {error && (
           <p className="alert error" role="alert">
