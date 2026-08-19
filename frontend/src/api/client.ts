@@ -1,11 +1,13 @@
 import type { Page, Session } from '../types/domain'
 
 /**
- * All requests go through the Vite dev proxy (see vite.config.ts) so the browser
- * treats them as same-origin. In production, point this at the real backend origin
- * and add CORS on the Spring side.
+ * Where the API lives.
+ *
+ * <p>Locally this is the Vite dev proxy (see vite.config.ts), which keeps requests same-origin.
+ * A static deployment has no proxy, so set VITE_API_BASE_URL to the backend's own origin at build
+ * time - and add CORS on the Spring side, because the requests are then cross-origin.
  */
-const BASE = '/backend'
+const BASE = import.meta.env.VITE_API_BASE_URL ?? '/backend'
 
 const TOKEN_KEY = 'library.jwt'
 const SESSION_KEY = 'library.session'

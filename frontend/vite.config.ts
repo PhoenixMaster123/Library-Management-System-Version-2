@@ -7,6 +7,9 @@ import react from '@vitejs/plugin-react'
 // See src/api/client.ts, which prefixes all calls with /backend.
 // noinspection JSUnusedGlobalSymbols -- Loaded by name by Vite, never imported, so an IDE sees an export nobody uses.
 export default defineConfig({
+  // '/' locally, '/<repo>/' on GitHub Pages, where the site is served from a subdirectory and
+  // absolute asset paths would otherwise 404.
+  base: process.env.VITE_BASE_PATH ?? '/',
   plugins: [react()],
   server: {
     port: 5173,
