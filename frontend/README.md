@@ -138,6 +138,24 @@ src/
     domain.ts          types mirroring the backend JSON
 ```
 
+## Deploying to a static host
+
+`npm run build` produces a `dist/` that any static host can serve, but two things have to be set at
+build time:
+
+```bash
+VITE_BASE_PATH=/my-repo/            # when served from a subdirectory
+VITE_API_BASE_URL=https://api.example.com   # no dev proxy exists outside `npm run dev`
+```
+
+`VITE_API_BASE_URL` defaults to `/backend`, the dev proxy path. Point it at a real backend origin
+and add CORS on the Spring side, since the requests are then cross-origin. Left unset on a static
+host, the app loads and every call fails — which the UI reports as "can't reach the library" rather
+than breaking.
+
+For an SPA, also copy `index.html` to `404.html`: a static host has no rewrite rule, so a deep link
+is a 404 until the same document is served for it.
+
 ## Error messages
 
 Nothing in the UI shows an HTTP status code. `Request failed with status 502` is a fact about
