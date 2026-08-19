@@ -1,6 +1,7 @@
 package app.infrastructure.exceptions;
 
-public class BookNotFoundException extends RuntimeException {
+/** Raised when a book id matches nothing. */
+public class BookNotFoundException extends ResourceNotFoundException {
     public BookNotFoundException(String message) {
         super(message);
     }

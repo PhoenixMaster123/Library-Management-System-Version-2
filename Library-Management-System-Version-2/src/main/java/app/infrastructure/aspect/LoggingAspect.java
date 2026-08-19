@@ -2,21 +2,24 @@ package app.infrastructure.aspect;
 
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.*;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
-@Slf4j
+/** Logs entry, exit and failure for the service layer. */
 @Aspect
 @Component
+@Slf4j
 public class LoggingAspect {
 
-    // Match all public methods in controllers
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
     public void controllerMethods() {}
 
-    // Log method entry
     @Before("controllerMethods()")
     public void logBefore(JoinPoint joinPoint) {
         log.info("➡️ Entering: {}.{}() with args: {}",
@@ -25,7 +28,6 @@ public class LoggingAspect {
                 Arrays.toString(joinPoint.getArgs()));
     }
 
-    // Log method exit (success case)
     @AfterReturning(pointcut = "controllerMethods()", returning = "result")
     public void logAfterReturning(JoinPoint joinPoint, Object result) {
         log.info("✅ Exiting: {}.{}() with result: {}",
@@ -34,7 +36,6 @@ public class LoggingAspect {
                 result);
     }
 
-    // Log exceptions
     @AfterThrowing(pointcut = "controllerMethods()", throwing = "ex")
     public void logAfterThrowing(JoinPoint joinPoint, Throwable ex) {
         log.error("❌ Exception in {}.{}() with cause = {}",
