@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Spring Data access to authors. */
 @Repository
 public interface AuthorRepository extends JpaRepository<AuthorEntity, UUID> {
     Optional<AuthorEntity> findByName(String name);

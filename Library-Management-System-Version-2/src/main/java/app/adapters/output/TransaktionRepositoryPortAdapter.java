@@ -3,47 +3,50 @@ package app.adapters.output;
 import app.adapters.output.entity.BookEntity;
 import app.adapters.output.entity.CustomerEntity;
 import app.adapters.output.entity.TransactionEntity;
+import app.adapters.output.mapper.EntityMapper;
 import app.adapters.output.repositories.BookRepository;
 import app.adapters.output.repositories.CustomerRepository;
 import app.adapters.output.repositories.TransactionRepository;
-import app.domain.model.Author;
-import app.domain.port.output.TransactionRepositoryPort;
 import app.domain.model.Book;
-import app.domain.model.Customer;
 import app.domain.model.Transaction;
+import app.domain.port.output.TransactionRepositoryPort;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
+/** Persists loans through JPA. */
 @Component
+@RequiredArgsConstructor
+@Transactional
 public class TransaktionRepositoryPortAdapter implements TransactionRepositoryPort {
 
     private final TransactionRepository transactionRepository;
     private final BookRepository bookRepository;
     private final CustomerRepository customerRepository;
 
-    public TransaktionRepositoryPortAdapter(TransactionRepository transactionRepository, BookRepository bookRepository, CustomerRepository customerRepository) {
-        this.transactionRepository = transactionRepository;
-        this.bookRepository = bookRepository;
-        this.customerRepository = customerRepository;
-    }
-
+    /**
+     * The lookups and the save must share one persistence context: without it the book found here
+     * is detached by the time the transaction is saved, and the cascade onto it fails.
+     */
     @Override
     public void saveTransaction(Transaction transaction) {
+        // The id is left unset: @GeneratedValue assigns it on persist, and setting it here would
+        // make save() treat the entity as detached and issue an UPDATE instead of an INSERT.
         TransactionEntity transactionEntity = new TransactionEntity();
         transactionEntity.setBorrowDate(transaction.getBorrowDate());
         transactionEntity.setReturnDate(transaction.getReturnDate());
         transactionEntity.setDueDate(transaction.getDueDate());
-        transactionEntity.setTransactionId(transaction.getTransactionId()); // Retain the UUID from Transaction
 
-        Optional<CustomerEntity> customerEntity = customerRepository.findById(transaction.getCustomer().getCustomerId());
+        Optional<CustomerEntity> customerEntity =
+                customerRepository.findById(transaction.getCustomer().getCustomerId());
         Optional<BookEntity> bookEntity = bookRepository.findById(transaction.getBook().getBookId());
 
         if (customerEntity.isEmpty()) {
@@ -67,59 +70,58 @@ public class TransaktionRepositoryPortAdapter implements TransactionRepositoryPo
     public List<Transaction> getTransactionsForBook(Book book) {
         return transactionRepository.findByBookBookId(book.getBookId())
                 .stream()
-                .map(this::mapToDomain)
-                .collect(Collectors.toList());
+                .map(EntityMapper::toTransaction)
+                .toList();
     }
 
     @Override
     public Page<Transaction> viewBorrowingHistory(UUID customerID, Pageable pageable) {
         return transactionRepository.findByCustomerCustomerId(customerID, pageable)
-                .map(this::mapToDomain);
+                .map(EntityMapper::toTransaction);
     }
 
     @Override
     public Optional<Transaction> findTransactionById(UUID transactionId) {
         return transactionRepository.findById(transactionId)
-                .map(this::mapToDomain);
+                .map(EntityMapper::toTransaction);
     }
+
+    @Override
+    public Optional<Transaction> findActiveLoanForBook(UUID bookId) {
+        return transactionRepository.findFirstByBookBookIdAndReturnDateIsNull(bookId)
+                .map(EntityMapper::toTransaction);
+    }
+
+    @Override
+    public Page<Transaction> findAllTransactions(Pageable pageable) {
+        return transactionRepository.findAll(pageable).map(EntityMapper::toTransaction);
+    }
+
+    @Override
+    public Page<Transaction> findActiveLoans(Pageable pageable) {
+        return transactionRepository.findByReturnDateIsNull(pageable).map(EntityMapper::toTransaction);
+    }
+
+    @Override
+    public long countActiveLoans(UUID customerId) {
+        return transactionRepository.countByCustomerCustomerIdAndReturnDateIsNull(customerId);
+    }
+
+    @Override
+    public List<Transaction> findLoansDueOn(LocalDate dueDate) {
+        return transactionRepository.findByReturnDateIsNullAndDueDate(dueDate)
+                .stream()
+                .map(EntityMapper::toTransaction)
+                .toList();
+    }
+
     @Override
     public void updateTransaction(Transaction transaction) {
         TransactionEntity entity = transactionRepository.findById(transaction.getTransactionId())
                 .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
         entity.setReturnDate(transaction.getReturnDate());
         entity.setDueDate(transaction.getDueDate());
+        entity.setExtended(transaction.isExtended());
         transactionRepository.save(entity);
-    }
-
-    private Transaction mapToDomain(TransactionEntity entity) {
-        return new Transaction(
-                entity.getTransactionId(),
-                entity.getBorrowDate(),
-                entity.getReturnDate(),
-                entity.getDueDate(),
-                new Customer(
-                        entity.getCustomer().getCustomerId(),
-                        entity.getCustomer().getName(),
-                        entity.getCustomer().getEmail(),
-                        entity.getCustomer().isPrivileges()
-                ),
-                new Book(
-                        entity.getBook().getBookId(),
-                        entity.getBook().getTitle(),
-                        entity.getBook().getIsbn(),
-                        entity.getBook().getPublicationYear(),
-                        entity.getBook().isAvailability(),
-                        entity.getBook().getCreated_at(),
-                        entity.getBook().getAuthors() != null
-                                ? entity.getBook().getAuthors().stream()
-                                .map(authorEntity -> new Author(
-                                        authorEntity.getAuthorId(),
-                                        authorEntity.getName(),
-                                        authorEntity.getBio()
-                                ))
-                                .collect(Collectors.toSet())
-                                : new HashSet<>()
-                )
-        );
     }
 }

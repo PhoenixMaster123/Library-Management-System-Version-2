@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Spring Data access to books. */
 @Repository
 public interface BookRepository extends JpaRepository<BookEntity, UUID> {
     @Query("SELECT b FROM BookEntity b LEFT JOIN FETCH b.authors WHERE b.title = :title")

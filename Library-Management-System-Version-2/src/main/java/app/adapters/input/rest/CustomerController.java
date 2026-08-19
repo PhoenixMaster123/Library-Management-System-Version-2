@@ -6,46 +6,52 @@ import app.domain.port.input.CustomerUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.*;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+/** Member records: reading, searching and updating them. Administrators only. */
 @RestController
 @RequestMapping("/customers")
 @Tag(name = "Customer Controller", description = "Endpoints for managing customers")
-public class CustomerController {
+@RequiredArgsConstructor
+public class CustomerController extends PaginatedController {
     private final CustomerUseCase customerUseCase;
 
-    @Autowired
-    public CustomerController(CustomerUseCase customerUseCase) {
-        this.customerUseCase = customerUseCase;
-    }
-
+    /**
+     * No BindingResult: letting {@code @Valid} throw means GlobalExceptionHandler answers with the
+     * field errors, and this method can promise a concrete Customer instead of a wildcard.
+     */
     @PostMapping(produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Create a new customer")
-    public ResponseEntity<Customer> createNewCustomer(@Valid @RequestBody CreateNewCustomer newCustomer, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(null);
-        }
-        Customer customer = customerUseCase.createNewCustomer(newCustomer);
-        return ResponseEntity.ok(customer);
+    public ResponseEntity<Customer> createNewCustomer(@Valid @RequestBody CreateNewCustomer newCustomer) {
+        return ResponseEntity.ok(customerUseCase.createNewCustomer(newCustomer));
     }
 
-    @GetMapping(value = "/{id}", produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/{id}",
+            produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Get a single customer")
     public ResponseEntity<Map<String, Object>> getCustomerById(@PathVariable UUID id) {
         Optional<Customer> customerOpt = customerUseCase.findCustomerById(id);
@@ -67,15 +73,16 @@ public class CustomerController {
                 .body(Map.of("message", "Customer retrieved successfully", "data", customerOpt.get()));
     }
 
-    @GetMapping(value = "/search", produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/search",
+            produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Search for a customer by name or ID or query")
     public ResponseEntity<Map<String, Object>> getCustomer(
             @RequestParam(required = false) UUID id,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String query,
-            @RequestParam Optional<Integer> page,
-            @RequestParam Optional<Integer> size,
-            @RequestParam Optional<String> sortBy
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "3") int size,
+            @RequestParam(defaultValue = "name") String sortBy
     ) {
         if (id != null) {
             Optional<Customer> customer = customerUseCase.findCustomerById(id);
@@ -88,26 +95,11 @@ public class CustomerController {
                     .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                             .body(Map.of("message", "Customer with the given name not found")));
         } else if (query != null && !query.isBlank()) {
-            int currentPage = page.orElse(0);
-            int pageSize = size.orElse(3);
-            String sortField = sortBy.orElse("name");
-
-            PageRequest pageable = PageRequest.of(currentPage, pageSize, Sort.Direction.ASC, sortField);
+            PageRequest pageable = pageRequest(page, size, sortBy);
             Page<Customer> customers = customerUseCase.searchCustomer(query, pageable);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("self", "<" + linkTo(methodOn(CustomerController.class)
-                    .getCustomer(null, null, query, Optional.of(currentPage), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"self\"");
-
-            if (customers.hasPrevious()) {
-                headers.add("prev", "<" + linkTo(methodOn(CustomerController.class)
-                        .getCustomer(null, null, query, Optional.of(currentPage - 1), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"prev\"");
-            }
-
-            if (customers.hasNext()) {
-                headers.add("next", "<" + linkTo(methodOn(CustomerController.class)
-                        .getCustomer(null, null, query, Optional.of(currentPage + 1), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"next\"");
-            }
+            HttpHeaders headers = pageLinks(customers, p -> methodOn(CustomerController.class)
+                    .getCustomer(null, null, query, p, size, sortBy));
 
             if (customers.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -115,13 +107,7 @@ public class CustomerController {
                         .body(Map.of("message", "No customers found for the given query"));
             }
 
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("data", customers.getContent());
-            response.put("totalPages", customers.getTotalPages());
-            response.put("currentPage", customers.getNumber());
-            response.put("totalItems", customers.getTotalElements());
-
-            return ResponseEntity.ok().headers(headers).body(response);
+            return ResponseEntity.ok().headers(headers).body(pageBody(customers));
         } else {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -129,55 +115,39 @@ public class CustomerController {
         }
     }
 
-    @GetMapping(value = "/paginated", produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @GetMapping(value = "/paginated",
+            produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Get all customers")
     public ResponseEntity<Map<String, Object>> getAllCustomers(
-            @RequestParam Optional<Integer> page,
-            @RequestParam Optional<Integer> size,
-            @RequestParam Optional<String> sortBy
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "name") String sortBy
     ) {
-        int currentPage = page.orElse(0);
-        int pageSize = size.orElse(5);
-        String sortField = sortBy.orElse("name");
-
-        PageRequest pageable = PageRequest.of(currentPage, pageSize, Sort.Direction.ASC, sortField);
+        PageRequest pageable = pageRequest(page, size, sortBy);
         Page<Customer> customers = customerUseCase.getPaginatedCustomers(pageable);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("self", "<" + linkTo(methodOn(CustomerController.class)
-                .getAllCustomers(Optional.of(currentPage), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"self\"");
-
-        if (customers.hasPrevious()) {
-            headers.add("prev", "<" + linkTo(methodOn(CustomerController.class)
-                    .getAllCustomers(Optional.of(currentPage - 1), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"prev\"");
-        }
-        if (customers.hasNext()) {
-            headers.add("next", "<" + linkTo(methodOn(CustomerController.class)
-                    .getAllCustomers(Optional.of(currentPage + 1), Optional.of(pageSize), Optional.of(sortField))).toUri() + ">; rel=\"next\"");
-        }
+        HttpHeaders headers = pageLinks(customers, p -> methodOn(CustomerController.class)
+                .getAllCustomers(p, size, sortBy));
 
         if (customers.isEmpty()) {
             Map<String, Object> errorResponse = Map.of(
                     "message", "There are no customers on this page.",
-                    "currentPage", currentPage,
-                    "pageSize", pageSize,
-                    "sortBy", sortField
+                    "currentPage", page,
+                    "pageSize", size,
+                    "sortBy", sortBy
             );
             return ResponseEntity.status(HttpStatus.NOT_FOUND).headers(headers).body(errorResponse);
         }
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("data", customers.getContent());
-        response.put("totalPages", customers.getTotalPages());
-        response.put("currentPage", customers.getNumber());
-        response.put("totalItems", customers.getTotalElements());
-
-        return ResponseEntity.ok().headers(headers).body(response);
+        return ResponseEntity.ok().headers(headers).body(pageBody(customers));
     }
 
-    @PutMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @PutMapping(value = "/{id}",
+            produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Update a customer")
-    public ResponseEntity<String> updateCustomer(@PathVariable UUID id, @Valid @RequestBody Customer customer, BindingResult bindingResult) {
+    public ResponseEntity<String> updateCustomer(@PathVariable UUID id,
+                                                 @Valid @RequestBody Customer customer,
+                                                 BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return ResponseEntity.badRequest().body("Invalid customer data");
         }
@@ -186,9 +156,11 @@ public class CustomerController {
         return ResponseEntity.status(HttpStatus.OK).body("Customer updated successfully!");
     }
 
-    @PutMapping(value = "/{id}/privileges", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @PutMapping(value = "/{id}/privileges",
+            produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Update a customer privileges")
-    public ResponseEntity<String> updateCustomerPrivileges(@PathVariable UUID id, @RequestBody(required = false) Boolean privileges) {
+    public ResponseEntity<String> updateCustomerPrivileges(@PathVariable UUID id,
+                                                           @RequestBody(required = false) Boolean privileges) {
         if (privileges == null) {
             return ResponseEntity.badRequest().body("Invalid privileges value");
         }
@@ -196,7 +168,8 @@ public class CustomerController {
         return ResponseEntity.ok("Customer privileges updated successfully!");
     }
 
-    @DeleteMapping(value = "/{id}", produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+    @DeleteMapping(value = "/{id}",
+            produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Delete a customer")
     public ResponseEntity<String> deleteCustomer(@PathVariable UUID id) {
         customerUseCase.deleteCustomer(id);
