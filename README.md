@@ -81,9 +81,12 @@ because neither service authenticates its callers.
 Put a TLS-terminating reverse proxy in front of 9092; the application speaks plain HTTP, and a
 browser on an HTTPS page will not call an HTTP API.
 
-**The database is still in-memory.** A restart of the backend wipes the catalogue and every
-self-registered member; the administrator is recreated from configuration. Fine for a demo, not for
-anything you want to keep - switch to file-backed H2 on a volume, or Postgres/MySQL, first.
+The database is file-backed H2 on a named volume, so the catalogue and everyone who registered
+survive a restart. `LIBRARY_DB_URL` moves it elsewhere. Locally, `dev.ps1` runs the dev profile,
+which stays in memory - a throwaway database is what makes the JSON fixture reproducible.
+
+H2 suits one instance writing one file. Two backends against the same volume will not work; that is
+the point at which to move to Postgres or MySQL.
 
 ## Prerequisites
 
