@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    /* DOM as well as Node: a Playwright spec runs in Node, but page.evaluate() callbacks are
+       serialised and run inside the browser, so they legitimately reference document. */
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    /* Tooling that runs in Node - config files and the Playwright suite - so process, __dirname
+       and friends exist here and nowhere else. */
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e"]
+}
