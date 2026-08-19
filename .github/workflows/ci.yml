@@ -13,6 +13,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '22'
@@ -178,3 +181,61 @@ jobs:
             Library-Management-System-Version-2/backend.log
           retention-days: 7
           if-no-files-found: ignore
+
+  # --------------------------------------------------------------------------------------------
+  # Publishes the built frontend to GitHub Pages.
+  #
+  # Pages serves static files and nothing else, so the API has to live somewhere else. Set the
+  # repository variable API_BASE_URL to a reachable backend origin and the site will talk to it;
+  # leave it unset and the app still loads, but every call fails and the UI says it cannot reach
+  # the library. That is the honest outcome for a static host with no server behind it.
+  # --------------------------------------------------------------------------------------------
+  pages:
+    name: Deploy to GitHub Pages
+    # Only from the default branch, and only once the code is known to be good.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [java, frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/configure-pages@v6
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          # The site is served from https://<owner>.github.io/<repo>/, so assets need that prefix.
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: npm run build
+
+      - name: Add an SPA fallback
+        working-directory: frontend
+        # Pages has no rewrite rule, so a deep link like /books is a 404 until the same document is
+        # served for it. Copying index.html to 404.html is the usual way to let the router take over.
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: frontend/dist
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5

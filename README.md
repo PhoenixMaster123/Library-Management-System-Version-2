@@ -222,6 +222,30 @@ matrix runs with `fail-fast: false` so one red service does not hide the state o
 Test reports are published to the run summary, and on failure the surefire/failsafe reports, PMD
 and Checkstyle XML, and the Playwright trace are uploaded as artifacts.
 
+## Deployment
+
+Pushes to `main` publish the built frontend to **GitHub Pages** at
+`https://<owner>.github.io/<repo>/`, after the Java and frontend jobs pass. Enable it once under
+**Settings → Pages → Source → GitHub Actions**.
+
+Pages serves static files and nothing else, so **the API has to live somewhere else**:
+
+| Repository variable | Effect |
+| ------------------- | ------ |
+| `API_BASE_URL` unset | The site loads, every call fails, and the UI says it cannot reach the library |
+| `API_BASE_URL` set to a backend origin | The site talks to that backend |
+
+Set it under **Settings → Secrets and variables → Actions → Variables**. A cross-origin backend
+also needs a `CorsConfigurationSource` bean on the Spring side — the dev proxy that makes requests
+same-origin locally does not exist on a static host.
+
+Two build-time details the deployment depends on:
+
+- **`VITE_BASE_PATH`** is set to `/<repo>/`, because Pages serves from a subdirectory and absolute
+  asset paths would otherwise 404.
+- **`404.html`** is a copy of `index.html`. Pages has no rewrite rule, so a deep link such as
+  `/books` is a 404 until the same document is served for it and the router can take over.
+
 ## Code style
 
 One Checkstyle ruleset and one PMD ruleset in `config/`, shared by all three services so they are
