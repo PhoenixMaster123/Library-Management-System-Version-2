@@ -24,6 +24,10 @@ jobs:
   java:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    # The test report is published as a check run, which the read-only default token cannot create.
+    permissions:
+      contents: read
+      checks: write
     strategy:
       # One service failing should not hide the state of the other two.
       fail-fast: false
