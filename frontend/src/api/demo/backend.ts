@@ -68,17 +68,36 @@ const hydrate = (t: Transaction): Transaction => ({
   book: helpers.book(t.bookId),
 })
 
-/** Stands in for the Open Library search, so Discover has something to show. */
+/**
+ * Stands in for the Open Library search. These are real books with real ISBNs, so the cover lookup
+ * resolves against Open Library exactly as it does with the backend behind it - an invented ISBN
+ * would leave every card blank.
+ */
+const CATALOGUE: Omit<CatalogCandidate, 'stocked'>[] = [
+  { title: 'Nineteen Eighty-Four', isbn: '9780451524935', publicationYear: 1949, authors: ['George Orwell'], coverId: null },
+  { title: 'Brave New World', isbn: '9780060850524', publicationYear: 1932, authors: ['Aldous Huxley'], coverId: null },
+  { title: 'Frankenstein', isbn: '9780486282114', publicationYear: 1818, authors: ['Mary Shelley'], coverId: null },
+  { title: 'Pride and Prejudice', isbn: '9780141439518', publicationYear: 1813, authors: ['Jane Austen'], coverId: null },
+  { title: 'Moby-Dick', isbn: '9780142437247', publicationYear: 1851, authors: ['Herman Melville'], coverId: null },
+  { title: 'The Great Gatsby', isbn: '9780743273565', publicationYear: 1925, authors: ['F. Scott Fitzgerald'], coverId: null },
+  { title: 'Crime and Punishment', isbn: '9780140449136', publicationYear: 1866, authors: ['Fyodor Dostoevsky'], coverId: null },
+  { title: 'The Hobbit', isbn: '9780547928227', publicationYear: 1937, authors: ['J. R. R. Tolkien'], coverId: null },
+  { title: 'Jane Eyre', isbn: '9780141441146', publicationYear: 1847, authors: ['Charlotte Bronte'], coverId: null },
+  { title: 'The Odyssey', isbn: '9780140268867', publicationYear: -700, authors: ['Homer'], coverId: null },
+  { title: 'Slaughterhouse-Five', isbn: '9780385333849', publicationYear: 1969, authors: ['Kurt Vonnegut'], coverId: null },
+  { title: 'The Handmaid’s Tale', isbn: '9780385490818', publicationYear: 1985, authors: ['Margaret Atwood'], coverId: null },
+]
+
 function catalogue(query: string): CatalogCandidate[] {
-  const q = query.trim()
+  const q = query.trim().toLowerCase()
   if (!q) return []
-  const held = new Set(db().books.map((b) => b.isbn))
-  const n = q.length
-  return [
-    { title: `${q} and Other Essays`, isbn: `978-1-000-${(n * 7919) % 100000}-0`, publicationYear: 2015, authors: ['A. Writer'], coverId: null },
-    { title: `The Book of ${q}`, isbn: `978-1-001-${(n * 104729) % 100000}-1`, publicationYear: 2001, authors: ['B. Author'], coverId: null },
-    { title: `${q}: A History`, isbn: `978-1-002-${(n * 1299709) % 100000}-2`, publicationYear: 1994, authors: ['C. Historian'], coverId: null },
-  ].map((c) => ({ ...c, stocked: held.has(c.isbn) }))
+  const held = new Set(db().books.map((b) => b.isbn.replace(/[^0-9Xx]/g, '')))
+  return CATALOGUE.filter(
+    (c) =>
+      c.title.toLowerCase().includes(q) ||
+      c.authors.some((a) => a.toLowerCase().includes(q)) ||
+      c.isbn.includes(q),
+  ).map((c) => ({ ...c, stocked: held.has(c.isbn) }))
 }
 
 export function handle(method: string, path: string, body: unknown, auth: string | null): unknown {
@@ -95,7 +114,7 @@ export function handle(method: string, path: string, body: unknown, auth: string
     const user = state.users.find(
       (u) => u.username === str('username') && u.password === str('password'),
     )
-    if (!user) throw new DemoHttpError(401, 'Those credentials were not recognised.')
+    if (!user) throw new DemoHttpError(401, 'Invalid credentials')
     return {
       message: 'Signed in.',
       token: `${TOKEN_PREFIX}${encodeURIComponent(user.username)}`,
@@ -276,12 +295,55 @@ export function handle(method: string, path: string, body: unknown, auth: string
     requireAdmin(auth)
     const customer = helpers.customer(seg[1])
     if (!customer) throw new DemoHttpError(404, 'We could not find that member.')
+    // Wrapped in {message, data}, which is what customersApi.byId unwraps.
     return {
-      ...customer,
-      transactions: state.transactions
-        .filter((t) => t.customerId === customer.customerId)
-        .map(hydrate),
+      message: 'Member found.',
+      data: {
+        ...customer,
+        transactions: state.transactions
+          .filter((t) => t.customerId === customer.customerId)
+          .map(hydrate),
+      },
     }
+  }
+
+  if (method === 'POST' && rawPath === '/customers') {
+    requireAdmin(auth)
+    const name = str('name').trim()
+    if (!name) throw new DemoHttpError(400, 'A name is required.')
+    const customer: Customer = {
+      customerId: helpers.uuid(),
+      name,
+      email: str('email'),
+      privileges: payload.privileges !== false,
+    }
+    state.customers.push(customer)
+    save()
+    return customer
+  }
+
+  if (method === 'PUT' && seg[0] === 'customers' && seg[2] === 'privileges') {
+    requireAdmin(auth)
+    const customer = helpers.customer(seg[1])
+    if (!customer) throw new DemoHttpError(404, 'We could not find that member.')
+    // The endpoint takes a bare JSON boolean, not an object.
+    customer.privileges = body === true
+    save()
+    return 'Customer privileges updated successfully!'
+  }
+
+  if (method === 'DELETE' && seg[0] === 'customers' && seg.length === 2) {
+    requireAdmin(auth)
+    const customer = helpers.customer(seg[1])
+    if (!customer) throw new DemoHttpError(404, 'We could not find that member.')
+    if (helpers.activeLoansFor(customer.customerId).length) {
+      throw new DemoHttpError(400, 'That member still has books out.')
+    }
+    state.customers = state.customers.filter((c) => c.customerId !== customer.customerId)
+    state.users = state.users.filter((u) => u.customerId !== customer.customerId)
+    state.transactions = state.transactions.filter((t) => t.customerId !== customer.customerId)
+    save()
+    return 'Customer successfully deleted!'
   }
 
   // ---- loans ---------------------------------------------------------------------------------
