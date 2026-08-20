@@ -20,6 +20,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -92,13 +93,43 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * Response headers that limit what a browser will do with our pages.
+     *
+     * <p>The token lives in localStorage, so any script that runs on the page can read it. The
+     * content security policy is what makes that unlikely: injected script has nowhere to load from
+     * and no inline execution. HSTS matters once a proxy terminates TLS - it stops the next visit
+     * being made over plain HTTP in the first place.
+     */
+    private static void hardenHeaders(HeadersConfigurer<HttpSecurity> headers) {
+        headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives(String.join("; ",
+                        "default-src 'self'",
+                        // The catalogue covers come from Open Library; data: covers inline SVG.
+                        "img-src 'self' data: https://covers.openlibrary.org",
+                        "script-src 'self'",
+                        "style-src 'self' 'unsafe-inline'",
+                        "frame-ancestors 'none'",
+                        "base-uri 'self'",
+                        "form-action 'self'")))
+                .referrerPolicy(referrer -> referrer.policy(
+                        ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN))
+                .httpStrictTransportSecurity(hsts -> hsts
+                        .includeSubDomains(true)
+                        .maxAgeInSeconds(31536000));
+    }
+
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(API_PATHS)
                 .cors(Customizer.withDefaults())
+                // Safe to disable only because this chain is stateless and authenticates from a
+                // header: a browser does not attach an Authorization header to a cross-site form
+                // post, which is what CSRF relies on.
                 .csrf(AbstractHttpConfigurer::disable)
+                .headers(SecurityConfig::hardenHeaders)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/login", "/api/register").permitAll()
                         .requestMatchers("/api/logout").permitAll()
@@ -160,7 +191,11 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
+                .headers(headers -> {
+                    hardenHeaders(headers);
+                    // The H2 console renders in a frame; it only exists under the dev profile.
+                    headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable);
+                })
                 // Form login needs a session to remember who signed in.
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .build();
