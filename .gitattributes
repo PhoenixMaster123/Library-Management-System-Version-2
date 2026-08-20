@@ -1,0 +1,15 @@
+# Line endings are not cosmetic for these.
+#
+# The Maven wrapper is a shell script executed on Linux runners: committed with CRLF, its shebang
+# reads as an interpreter named "/bin/sh\r", which does not exist, and the build dies with exit 127
+# before Maven ever starts. Checking these out as LF everywhere is what keeps that from recurring.
+mvnw            text eol=lf
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+
+# Windows counterparts, which need the opposite.
+mvnw.cmd        text eol=crlf
+*.bat           text eol=crlf
+*.ps1           text eol=crlf
