@@ -14,7 +14,13 @@ import { RegisterPage } from './pages/RegisterPage'
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      {/*
+        The site is served from a subdirectory on GitHub Pages, so the router has to be told where
+        it starts. Without this every path arrives as /<repo>/books, matches no route, falls to the
+        catch-all and navigates to /books at the domain root - which really is a 404. BASE_URL is
+        '/' during development, so this is a no-op there.
+      */}
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
