@@ -260,8 +260,12 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.11.0</version>
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
+					<!--
+						release, not source/target: those emit 21 bytecode but still compile against
+						whatever JDK is installed, so an API added after 21 builds on a developer's
+						machine and fails on a JDK 21 runner. release pins the API surface too.
+					-->
+					<release>${java.version}</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
