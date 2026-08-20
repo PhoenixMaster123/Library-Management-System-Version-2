@@ -146,6 +146,19 @@ export const customersApi = {
     api.getPage<Customer>(
       `/customers/search?query=${encodeURIComponent(query)}&page=${page}&size=${size}&sortBy=${sortBy}`,
     ),
+
+  /**
+   * Adds a membership. It is not a sign-in account: registration is what pairs a username and
+   * password with a membership, and there is no endpoint for an administrator to do that.
+   */
+  create: (member: { name: string; email: string; privileges: boolean }) =>
+    api.post<Customer>('/customers', member),
+
+  /** Suspending borrowing rather than removing the member, which keeps their history. */
+  setPrivileges: (id: string, privileges: boolean) =>
+    api.put<string>(`/customers/${id}/privileges`, privileges),
+
+  remove: (id: string) => api.delete<string>(`/customers/${id}`),
 }
 
 export const transactionsApi = {
