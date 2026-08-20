@@ -208,7 +208,7 @@ port returns an empty `Optional` and the frontend renders that as an explanation
 
 ```bash
 ./mvnw test                          # 118 unit tests, ~1 min
-./mvnw verify                        # those plus 132 integration tests, ~3.5 min
+./mvnw verify                        # those plus 143 integration tests, ~3.5 min
 ./mvnw -f pom-docker.xml verify      # integration tests against Docker
 ```
 
@@ -229,7 +229,7 @@ picked up by being named `…IT.java` and by nothing else.
 | ------- | -------------------------- | ------------------ |
 | Phase   | `test`                     | `integration-test` |
 | Matches | `*Test`, `Test*`, `*Tests` | `*IT`              |
-| Count   | 118                        | 132                |
+| Count   | 118                        | 143                |
 
 ### Test isolation
 

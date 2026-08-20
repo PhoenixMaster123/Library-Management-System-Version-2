@@ -5,7 +5,7 @@ it, and a browser client.
 
 | Component                                       | Role                                            | Port | Store          | Required? |
 | ----------------------------------------------- | ----------------------------------------------- | ---- | -------------- | --------- |
-| [Library backend](library-backend.md)           | Owns the catalogue, members, loans and identity | 9092 | H2 (in-memory) | yes       |
+| [Library backend](library-backend.md)           | Owns the catalogue, members, loans and identity | 9092 | H2 (file)      | yes       |
 | [Frontend](frontend.md)                         | React SPA, the only human-facing surface        | 5173 | —              | yes       |
 | [Notification-Service](notification-service.md) | Sends and records notifications                 | 9093 | MySQL          | optional  |
 | [Analytics-Service](analytics-service.md)       | Counts what the library lends                   | 9095 | H2 (in-memory) | optional  |

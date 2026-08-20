@@ -4,11 +4,23 @@ A library platform built as a Spring Boot backend in Hexagonal Architecture, a R
 frontend, and two supporting services. Members browse and borrow from the catalogue; administrators
 manage books, authors, members and loans.
 
+> **Version 2.** A continuation of
+> [Library Management System](https://github.com/PhoenixMaster123/Library-Management-System)
+> (2024-2025), which was the backend on its own: a Spring Boot REST API in Hexagonal Architecture,
+> with JWT security, JPA, HATEOAS and caching. That backend is still the core here. What version 2
+> adds is everything around it — a React single-page frontend, two supporting services talking over
+> Kafka and OpenFeign, a hardened Docker Compose stack, a CI pipeline across all three services, and
+> a browser-only demo published to GitHub Pages on every push to `main`.
+
+**Try it:** <https://phoenixmaster123.github.io/Library-Management-System-Version-2/> — the demo runs
+entirely in your browser, so you can register, sign in, or sign in as `admin` / `admin` and use every
+admin screen without a backend anywhere. The data is yours alone and stays in your browser.
+
 ## Components
 
 | Component                | Path                                         | Port       | Store          | Required? |
 | ------------------------ | -------------------------------------------- | ---------- | -------------- | --------- |
-| **Library backend**      | `Library-Management-System-Version-2/`       | 9092       | H2 (in-memory) | yes       |
+| **Library backend**      | `Library-Management-System-Version-2/`       | 9092       | H2 (file)      | yes       |
 | **Frontend**             | `frontend/`                                  | 5173 (dev) | —              | yes       |
 | **Notification-Service** | `Notification-Service/Notification-Service/` | 9093       | MySQL          | optional  |
 | **Analytics-Service**    | `Analytics-Service/`                         | 9095       | H2 (in-memory) | optional  |
@@ -73,7 +85,7 @@ because neither service authenticates its callers.
 | Variable | Required | Notes |
 | --------------------- | -------- | ---------------------------------------------------------- |
 | `LIBRARY_JWT_SECRET` | yes | 32+ characters; without it everyone is signed out on restart |
-| `LIBRARY_ADMIN_PASSWORD` | yes | Blank creates no administrator at all |
+| `LIBRARY_ADMIN_PASSWORD` | yes | Left blank, one is generated and logged on first start instead |
 | `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD` | yes | For Notification-Service |
 | `LIBRARY_CORS_ORIGINS` | no | Set to the frontend's origin when it is hosted separately |
 | `NOTIFICATION_MAIL_*` | no | Mail stays off, and notifications are stored as `PENDING` |
@@ -123,14 +135,22 @@ npm run dev                  # http://localhost:5173
 
 ### Signing in
 
-The backend bootstraps **one** account, an administrator: **`admin` / `admin`**.
+The backend bootstraps **one** account, an administrator. Everything else is self-registration,
+which only ever creates members — so this account is the only way into the admin screens.
 
-Everything else is self-registration, which only ever creates members — so the administrator
-account is the only way into the admin screens. Override the password outside local runs:
+| How you start it                               | Administrator password                        |
+| ---------------------------------------------- | --------------------------------------------- |
+| `dev` profile (`dev.ps1`, or `-Dspring-boot.run.profiles=dev`) | **`admin` / `admin`**           |
+| `LIBRARY_ADMIN_PASSWORD` set                   | that password, reapplied on every start       |
+| neither                                        | generated on first start, written to the log once |
 
 ```bash
-export LIBRARY_ADMIN_PASSWORD=…   # blank disables creating the account altogether
+export LIBRARY_ADMIN_PASSWORD=…   # authoritative: reapplied even if the account already exists
 ```
+
+A configured password wins over what is stored. The database is file-backed, so the account
+outlives the process — creating it only when missing would mean setting this variable later had no
+effect at all.
 
 ### Optional services
 
@@ -183,8 +203,8 @@ there. Switch to `redis` once one is.
 From `Library-Management-System-Version-2/`:
 
 ```bash
-./mvnw test                          # 110 unit tests, ~1 min
-./mvnw verify                        # those plus 132 integration tests, ~3.5 min
+./mvnw test                          # 118 unit tests, ~1 min
+./mvnw verify                        # those plus 143 integration tests, ~3.5 min
 ./mvnw -f pom-docker.xml verify      # integration tests against Docker
 ```
 
@@ -196,12 +216,12 @@ picked up by being named `…IT.java` and by nothing else.
 | ------- | -------------------------- | ------------------ |
 | Phase   | `test`                     | `integration-test` |
 | Matches | `*Test`, `Test*`, `*Tests` | `*IT`              |
-| Count   | 118                        | 132                |
+| Count   | 118                        | 143                |
 
 From `frontend/`:
 
 ```bash
-npm test                          # 33 unit tests (Vitest), no server needed
+npm test                          # 40 unit tests (Vitest), no server needed
 npm run test:e2e                  # 16 end-to-end tests (Playwright) — needs the backend on :9092
 npm run build                     # tsc type-check, then production build
 ```
@@ -209,8 +229,8 @@ npm run build                     # tsc type-check, then production build
 | Suite               | Tool                  | Needs a server?       | Count |
 | ------------------- | --------------------- | --------------------- | ----- |
 | Backend unit        | surefire              | no                    | 118   |
-| Backend integration | failsafe              | no (in-memory H2)     | 132   |
-| Frontend unit       | Vitest + jsdom        | no                    | 33    |
+| Backend integration | failsafe              | no (in-memory H2)     | 143   |
+| Frontend unit       | Vitest + jsdom        | no                    | 40    |
 | Frontend e2e        | Playwright + Chromium | yes, backend on :9092 | 16    |
 
 The e2e suite starts the Vite dev server itself, and skips with an explanation when the backend is
@@ -243,6 +263,7 @@ bodies on some routes, and identifier fields named `bookId` / `customerId` rathe
 | **java** (matrix ×3) | Checkstyle, then `mvnw verify` — unit tests, integration tests and PMD — for each of the three services |
 | **frontend**         | `npm ci`, type-check, unit tests, production build                                                      |
 | **e2e**              | Starts the backend, then drives Chromium through the Playwright suite                                   |
+| **pages**            | On `main` only: builds the frontend and publishes it to GitHub Pages                                    |
 
 All three services are built on every change, not only the one that changed: they share a Kafka
 topic and an HTTP contract, so a change to one can break another without touching its files. The
@@ -270,7 +291,7 @@ else**:
 
 | Repository variable | Effect |
 | ------------------- | ------ |
-| `API_BASE_URL` unset | The site loads, every call fails, and the UI says it cannot reach the library |
+| `API_BASE_URL` unset | Demo mode: the app answers its own requests in the browser, and every screen works |
 | `API_BASE_URL` set to a backend origin | The site talks to that backend |
 
 Set it under **Settings → Secrets and variables → Actions → Variables**. A cross-origin backend
