@@ -12,6 +12,39 @@ const PAGE_SIZE = 20
  * The rest of the world's books, not the library's. Anything found here can be put on the shelves
  * by whoever wants to read it - the catalogue belongs to the members, not to the desk.
  */
+/**
+ * A cover, addressed by cover id where the catalogue gave one and by ISBN otherwise - the search
+ * endpoint often omits `cover_i` for editions that do have a cover. Falls back to the placeholder
+ * rather than a broken image when neither resolves.
+ */
+function BookCover({ coverId, isbn }: { coverId: number | null; isbn: string }) {
+  const sources = [
+    coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null,
+    isbn ? `https://covers.openlibrary.org/b/isbn/${isbn.replace(/[^0-9Xx]/g, '')}-M.jpg` : null,
+  ].filter((url): url is string => Boolean(url))
+
+  const [attempt, setAttempt] = useState(0)
+
+  if (attempt >= sources.length) {
+    return <span className="discover-cover cover-empty" aria-hidden="true" />
+  }
+
+  return (
+    <img
+      className="discover-cover"
+      src={sources[attempt]}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      // Open Library answers with a 1x1 placeholder for a missing cover, so a load is not proof.
+      onError={() => setAttempt((n) => n + 1)}
+      onLoad={(event) => {
+        if (event.currentTarget.naturalWidth <= 1) setAttempt((n) => n + 1)
+      }}
+    />
+  )
+}
+
 export function DiscoverPage() {
   const [term, setTerm] = useState('')
   const [query, setQuery] = useState('')
@@ -105,20 +138,7 @@ export function DiscoverPage() {
             const stocked = book.stocked || added.has(book.isbn)
             return (
               <li key={book.isbn} className="discover-card">
-                {book.coverId ? (
-                  <img
-                    className="discover-cover"
-                    src={`https://covers.openlibrary.org/b/id/${book.coverId}-M.jpg`}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    onError={(event) => {
-                      event.currentTarget.style.visibility = 'hidden'
-                    }}
-                  />
-                ) : (
-                  <span className="discover-cover cover-empty" aria-hidden="true" />
-                )}
+                <BookCover coverId={book.coverId} isbn={book.isbn} />
 
                 <div className="discover-body">
                   <strong className="discover-title">{book.title}</strong>

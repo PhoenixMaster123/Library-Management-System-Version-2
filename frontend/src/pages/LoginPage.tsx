@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { DEMO_MODE } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { BrandMark } from '../components/Layout'
+import { PasswordField } from '../components/PasswordField'
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth()
@@ -72,17 +73,14 @@ export function LoginPage() {
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
-        </div>
+        <PasswordField
+          id="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          required
+        />
 
         <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}
