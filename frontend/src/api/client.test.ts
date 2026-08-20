@@ -109,6 +109,41 @@ describe('authentication', () => {
     expect(getToken()).toBeNull()
   })
 
+  /**
+   * A wrong password is not an expired session. Reporting it as one sends the reader looking for a
+   * session that never existed, and bounced them to the page they were already on.
+   */
+  it('reports a rejected sign-in as bad credentials, not an expired session', async () => {
+    fetchMock.mockResolvedValue(respond(401, 'Invalid credentials', 'text/plain'))
+
+    const error = (await api.post('/api/login', { username: 'admin', password: 'nope' })
+      .catch((e: unknown) => e)) as ApiError
+
+    expect(error.message).toBe('Invalid credentials')
+    expect(error.message).not.toMatch(/session/i)
+    expect(error.name).not.toBe('UnauthorizedError')
+  })
+
+  it('keeps whatever token exists when a sign-in is refused', async () => {
+    setToken('Bearer someone-elses-session')
+    fetchMock.mockResolvedValue(respond(401, 'Invalid credentials', 'text/plain'))
+
+    await expect(api.post('/api/login', {})).rejects.toBeInstanceOf(ApiError)
+
+    // Nothing was signed out: the failed attempt was not this session's.
+    expect(getToken()).toBe('Bearer someone-elses-session')
+  })
+
+  it('still treats a 401 elsewhere as an expired session', async () => {
+    setToken('Bearer stale')
+    fetchMock.mockResolvedValue(respond(401, ''))
+
+    const error = (await api.get('/books/paginated').catch((e: unknown) => e)) as Error
+
+    expect(error.name).toBe('UnauthorizedError')
+    expect(getToken()).toBeNull()
+  })
+
   /** 403 means the token is fine but the door is closed - signing the user out would be wrong. */
   it('keeps the token on 403', async () => {
     setToken('Bearer good-token')
