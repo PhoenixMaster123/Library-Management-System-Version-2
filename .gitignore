@@ -14,3 +14,9 @@ replay_pid*.log
 
 # Logs
 *.log
+
+# Local secrets
+.env
+
+# Local H2 database file
+data/

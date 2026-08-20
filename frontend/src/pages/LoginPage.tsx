@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { DEMO_MODE } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { BrandMark } from '../components/Layout'
 
@@ -44,6 +45,14 @@ export function LoginPage() {
 
         <h1>Welcome back</h1>
         <p className="sub">Sign in with your username and password.</p>
+
+        {DEMO_MODE && (
+          <p className="alert warn" role="status">
+            <strong>Demo.</strong> This copy runs entirely in your browser, so everything works but
+            the data is yours alone. Sign in as <code>admin</code> / <code>admin</code> to see the
+            admin screens, <code>ada</code> / <code>ada</code> as a member, or register your own.
+          </p>
+        )}
 
         {error && (
           <p className="alert error" role="alert">

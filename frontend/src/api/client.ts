@@ -9,6 +9,13 @@ import type { Page, Session } from '../types/domain'
  */
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '/backend'
 
+/**
+ * True when the build knew it was going somewhere with no backend to talk to - a static host with
+ * no API origin configured. Requests are then answered in the browser instead of over the network,
+ * so every screen works; the UI says where the data is coming from.
+ */
+export const DEMO_MODE = import.meta.env.VITE_DEMO === 'true'
+
 const TOKEN_KEY = 'library.jwt'
 const SESSION_KEY = 'library.session'
 
@@ -94,6 +101,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set('Authorization', token.startsWith('Bearer ') ? token : `Bearer ${token}`)
   }
 
+  if (DEMO_MODE) {
+    return demoRequest<T>(path, init, headers.get('Authorization'))
+  }
+
   let response: Response
   try {
     response = await fetch(`${BASE}${path}`, { ...init, headers })
@@ -162,6 +173,37 @@ function usableMessage(text: string): string | null {
   if (trimmed.startsWith('<')) return null
   if (trimmed.length > 300) return null
   return trimmed
+}
+
+/**
+ * Answers a request from the in-browser backend, raising the same errors the network path does -
+ * so `getPage`, the 401 redirect and every caller behave identically either way.
+ */
+async function demoRequest<T>(
+  path: string,
+  init: RequestInit,
+  auth: string | null,
+): Promise<T> {
+  const { handle, DemoHttpError } = await import('./demo/backend')
+  const method = (init.method ?? 'GET').toUpperCase()
+  const body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined
+
+  // A little latency, so loading states are visible rather than flashing past.
+  await new Promise((resolve) => setTimeout(resolve, 120))
+
+  try {
+    return handle(method, path, body, auth) as T
+  } catch (error) {
+    if (error instanceof DemoHttpError) {
+      if (error.status === 401) {
+        clearToken()
+        throw new UnauthorizedError(error.message)
+      }
+      if (error.status === 403) throw new ForbiddenError(error.message)
+      throw new ApiError(error.status, error.message)
+    }
+    throw error
+  }
 }
 
 async function readError(response: Response): Promise<string> {

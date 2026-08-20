@@ -59,6 +59,35 @@ killed Maven wrapper leaves its Java child running, still holding the port.
 
 The steps below are the same thing by hand.
 
+## Running it in Docker
+
+```bash
+cp .env.example .env     # then fill it in - compose refuses to start with any secret missing
+docker compose up --build
+```
+
+Only the backend publishes a port, and only on loopback (`127.0.0.1:9092`). MySQL, Kafka,
+Notification-Service and Analytics-Service are reachable on the internal network and nowhere else,
+because neither service authenticates its callers.
+
+| Variable | Required | Notes |
+| --------------------- | -------- | ---------------------------------------------------------- |
+| `LIBRARY_JWT_SECRET` | yes | 32+ characters; without it everyone is signed out on restart |
+| `LIBRARY_ADMIN_PASSWORD` | yes | Blank creates no administrator at all |
+| `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD` | yes | For Notification-Service |
+| `LIBRARY_CORS_ORIGINS` | no | Set to the frontend's origin when it is hosted separately |
+| `NOTIFICATION_MAIL_*` | no | Mail stays off, and notifications are stored as `PENDING` |
+
+Put a TLS-terminating reverse proxy in front of 9092; the application speaks plain HTTP, and a
+browser on an HTTPS page will not call an HTTP API.
+
+The database is file-backed H2 on a named volume, so the catalogue and everyone who registered
+survive a restart. `LIBRARY_DB_URL` moves it elsewhere. Locally, `dev.ps1` runs the dev profile,
+which stays in memory - a throwaway database is what makes the JSON fixture reproducible.
+
+H2 suits one instance writing one file. Two backends against the same volume will not work; that is
+the point at which to move to Postgres or MySQL.
+
 ## Prerequisites
 
 - JDK 21
@@ -228,7 +257,16 @@ Pushes to `main` publish the built frontend to **GitHub Pages** at
 `https://<owner>.github.io/<repo>/`, after the Java and frontend jobs pass. Enable it once under
 **Settings → Pages → Source → GitHub Actions**.
 
-Pages serves static files and nothing else, so **the API has to live somewhere else**:
+**With no backend configured the site publishes in demo mode**: the app answers its own requests in
+the browser, so a visitor can register, sign in, sign in as `admin` / `admin`, borrow, return and
+use every admin screen. The data is theirs alone and lives in their browser. Nothing to host, and
+nothing that looks broken.
+
+Set `API_BASE_URL` and it talks to the real backend instead; the demo code is then dropped from the
+bundle entirely.
+
+Pages serves static files and nothing else, so **to use the real API it has to live somewhere
+else**:
 
 | Repository variable | Effect |
 | ------------------- | ------ |

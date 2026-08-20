@@ -140,9 +140,12 @@ The two notes are the design: neither call can fail the borrow.
 
 ## Data
 
-H2 in-memory, so everything is gone on restart. The console is at `/h2-console`
-(`jdbc:h2:mem:library_ms`). The administrator is recreated at each start-up; self-registered members
-are not.
+H2, file-backed by default (`./data/library_ms`, or `LIBRARY_DB_URL`), so the catalogue and its
+members outlive a restart. The `dev` profile and the tests override it to in-memory, where starting
+from nothing is the point.
+
+The H2 console is off unless the `dev` profile is active: it answers without authentication, so it
+belongs on a laptop and nowhere else.
 
 Seeding depends on the profile:
 

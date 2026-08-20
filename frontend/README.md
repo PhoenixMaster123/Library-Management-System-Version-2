@@ -156,6 +156,20 @@ than breaking.
 For an SPA, also copy `index.html` to `404.html`: a static host has no rewrite rule, so a deep link
 is a 404 until the same document is served for it.
 
+## Demo mode
+
+Built with `VITE_DEMO=true`, the app answers its own requests from `src/api/demo/` instead of the
+network: an in-memory library in `store.ts`, and the rules in `backend.ts` - a member borrows only
+against their own membership, an administrator sees the admin screens, a book is out or it is not.
+It exists so the published site works with nothing hosted behind it.
+
+`client.ts` routes there inside `request()`, so no page or service knows the difference, and the
+same `ApiError`/`ForbiddenError`/`UnauthorizedError` come back either way. The import is dynamic
+and the flag is static, so a normal build drops the whole thing.
+
+It is not the real backend: data is per-browser, the token is a username in a string, and Discover
+returns invented results rather than searching Open Library.
+
 ## Error messages
 
 Nothing in the UI shows an HTTP status code. `Request failed with status 502` is a fact about

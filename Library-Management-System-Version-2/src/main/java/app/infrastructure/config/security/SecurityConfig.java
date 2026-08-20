@@ -20,6 +20,14 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -43,14 +51,53 @@ public class SecurityConfig {
             "/api/**", "/admin/**", "/books/**", "/authors/**", "/customers/**", "/transactions/**"
     };
 
+    @Value("${library.cors.allowed-origins:}")
+    private String allowedOrigins;
+
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthenticationFilter authenticationFilter;
+
+    /**
+     * Cross-origin rules for the API, from {@code library.cors.allowed-origins}.
+     *
+     * <p>Empty by default, which allows nothing: locally the frontend is proxied and so is already
+     * same-origin. A separately hosted frontend has to be named here or the browser blocks it.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+
+        if (origins.isEmpty()) {
+            return source;
+        }
+
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        // The pagination links are custom headers, and a browser hides those from cross-origin
+        // JavaScript unless they are named here.
+        config.setExposedHeaders(List.of("Authorization", "self", "next", "prev"));
+        // The token travels in a header, not a cookie, so credentials are not needed - and leaving
+        // them off is what allows an explicit origin list to stay strict.
+        config.setAllowCredentials(false);
+        config.setMaxAge(Duration.ofHours(1));
+
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .securityMatcher(API_PATHS)
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/login", "/api/register").permitAll()
@@ -88,6 +135,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/error", "/favicon.ico").permitAll()
                         .requestMatchers("/index.html", "/css/**", "/js/**", "/images/**").permitAll()
+                        // Only where the console exists at all - see application.properties.
+                        // Reachable without authentication, so it must never be on in a deployment.
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
