@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { DEMO_MODE } from '../api/client'
 import { analyticsApi } from '../api/services'
 import { EmptyState, SkeletonRows } from '../components/TableStates'
 import { ErrorNotice } from '../components/ErrorNotice'
@@ -128,8 +129,9 @@ export function InsightsPage() {
           </div>
 
           <p className="footnote">
-            Figures come from Analytics-Service, which rebuilds them from the <code>library.loans</code>{' '}
-            event stream on every start.
+            {DEMO_MODE
+              ? 'Figures are counted from the loans in this browser. With a real backend they come from Analytics-Service instead.'
+              : 'Figures come from Analytics-Service, which rebuilds them from the library.loans event stream on every start.'}
           </p>
         </>
       )}

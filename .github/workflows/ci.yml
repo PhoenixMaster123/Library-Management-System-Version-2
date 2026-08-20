@@ -218,16 +218,15 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      # Deploying without a backend is a legitimate thing to want - the UI is still worth looking
-      # at. What is not acceptable is a site that looks broken, so the build passes the fact down
-      # to the app, which then says so on the sign-in page instead of failing a login mysteriously.
+      # With no backend to call, the app runs its own in the browser rather than publishing a site
+      # where nothing works. Set API_BASE_URL and it talks to the real one instead.
       - name: Note whether an API origin is configured
         id: api
         run: |
           if [ -z "${{ vars.API_BASE_URL }}" ]; then
-            echo "::warning::API_BASE_URL is not set. The site will publish, but it has no backend"
-            echo "::warning::to sign in against. Set it under Settings > Secrets and variables >"
-            echo "::warning::Actions > Variables, and add the same origin to LIBRARY_CORS_ORIGINS."
+            echo "::notice::No API_BASE_URL, so the site is published in demo mode: the app answers"
+            echo "::notice::its own requests in the browser and every screen works, per visitor."
+            echo "::notice::Set API_BASE_URL to a backend origin to use the real one instead."
             echo "unconfigured=true" >> "$GITHUB_OUTPUT"
           else
             echo "unconfigured=false" >> "$GITHUB_OUTPUT"
@@ -239,7 +238,7 @@ jobs:
           # The site is served from https://<owner>.github.io/<repo>/, so assets need that prefix.
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
           VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
-          VITE_BACKEND_UNCONFIGURED: ${{ steps.api.outputs.unconfigured }}
+          VITE_DEMO: ${{ steps.api.outputs.unconfigured }}
         run: npm run build
 
       - name: Add an SPA fallback

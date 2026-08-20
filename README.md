@@ -257,7 +257,16 @@ Pushes to `main` publish the built frontend to **GitHub Pages** at
 `https://<owner>.github.io/<repo>/`, after the Java and frontend jobs pass. Enable it once under
 **Settings → Pages → Source → GitHub Actions**.
 
-Pages serves static files and nothing else, so **the API has to live somewhere else**:
+**With no backend configured the site publishes in demo mode**: the app answers its own requests in
+the browser, so a visitor can register, sign in, sign in as `admin` / `admin`, borrow, return and
+use every admin screen. The data is theirs alone and lives in their browser. Nothing to host, and
+nothing that looks broken.
+
+Set `API_BASE_URL` and it talks to the real backend instead; the demo code is then dropped from the
+bundle entirely.
+
+Pages serves static files and nothing else, so **to use the real API it has to live somewhere
+else**:
 
 | Repository variable | Effect |
 | ------------------- | ------ |
