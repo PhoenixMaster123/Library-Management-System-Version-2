@@ -16,6 +16,9 @@ const BASE = import.meta.env.VITE_API_BASE_URL ?? '/backend'
  */
 export const DEMO_MODE = import.meta.env.VITE_DEMO === 'true'
 
+/** Where a 401 means "those credentials are wrong", not "your session ended". */
+const SIGN_IN_PATHS = ['/api/login', '/api/register']
+
 const TOKEN_KEY = 'library.jwt'
 const SESSION_KEY = 'library.session'
 
@@ -115,8 +118,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (response.status === 401) {
+    const message = await readError(response)
+
+    // Signing in or registering is not a session expiring - there is no session yet - so say what
+    // actually happened and leave the caller on the page instead of bouncing it to /login.
+    if (SIGN_IN_PATHS.some((candidate) => path.startsWith(candidate))) {
+      throw new ApiError(401, message)
+    }
+
     clearToken()
-    throw new UnauthorizedError()
+    throw new UnauthorizedError(message)
   }
 
   if (response.status === 403) {
