@@ -49,12 +49,17 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).containsEntry("message", "Not found");
     }
 
+    /**
+     * The message is deliberately generic. An exception's own text can carry a query, a file path
+     * or a class name, and the caller has no business seeing any of it - the log does.
+     */
     @Test
     void testHandleGenericException() {
-        Exception exception = new Exception("Something went wrong");
-        ResponseEntity<String> response = globalExceptionHandler.handleGenericException(exception);
+        Exception exception = new Exception("Table CUSTOMERS not found in schema PUBLIC");
+        ResponseEntity<Map<String, String>> response = globalExceptionHandler.handleGenericException(exception);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).contains("An unexpected error occurred: Something went wrong");
+        assertThat(response.getBody()).containsEntry("message", "Something went wrong on our side.");
+        assertThat(response.getBody().toString()).doesNotContain("CUSTOMERS");
     }
 }

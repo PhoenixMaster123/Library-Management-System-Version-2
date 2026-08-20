@@ -8,6 +8,7 @@ import app.adapters.output.repositories.UserRepository;
 import app.infrastructure.config.database.DatabaseSeeder;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.test.context.TestContext;
@@ -63,6 +64,7 @@ public class TestStateResetListener extends AbstractTestExecutionListener {
         clearCaches(context);
         wipe(context);
         seeder.run();
+        restoreAdministrator(context);
     }
 
     private static void clearCaches(ApplicationContext context) {
@@ -76,6 +78,24 @@ public class TestStateResetListener extends AbstractTestExecutionListener {
             if (cache != null) {
                 cache.clear();
             }
+        }
+    }
+
+    /**
+     * The wipe takes the accounts with it, and DatabaseSeeder only stocks books and members - so
+     * without this no test can sign in as the administrator, which is how the admin endpoints are
+     * reached. Re-running the bootstrap runner recreates it from the same configuration.
+     */
+    private static void restoreAdministrator(ApplicationContext context) throws Exception {
+        CommandLineRunner bootstrap =
+                (CommandLineRunner) context.getBeanProvider(CommandLineRunner.class)
+                        .stream()
+                        .filter(bean -> bean.getClass().getName().contains("DataInitializer"))
+                        .findFirst()
+                        .orElse(null);
+
+        if (bootstrap != null) {
+            bootstrap.run();
         }
     }
 

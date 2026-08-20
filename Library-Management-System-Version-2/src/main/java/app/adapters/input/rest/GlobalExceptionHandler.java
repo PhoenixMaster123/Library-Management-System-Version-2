@@ -3,7 +3,9 @@ package app.adapters.input.rest;
 import app.infrastructure.exceptions.BorrowNotAllowedException;
 import app.infrastructure.exceptions.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -17,6 +19,7 @@ import java.util.UUID;
 
 /** Turns exceptions into the JSON error bodies the API promises. */
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     /** Matching the base type, not each subclass, is what stops a new one falling through as a 500. */
@@ -36,10 +39,26 @@ public class GlobalExceptionHandler {
         return Map.of("message", ex.getMessage() == null ? fallback : ex.getMessage());
     }
 
+    /**
+     * A path that matches nothing is a 404, not a server error. The catch-all below would otherwise
+     * turn every mistyped URL - and every disabled endpoint, such as Swagger in production - into a
+     * 500, which reads as "we broke" rather than "that is not here".
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, String>> handleNoResource(NoResourceFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", "We could not find what you were looking for."));
+    }
+
+    /**
+     * The last resort. The detail goes to the log, not to the caller: an exception message can
+     * carry a query, a file path or a class name, and none of that is the client's business.
+     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGenericException(Exception ex) {
-        return new ResponseEntity<>("An unexpected error occurred: " + ex.getMessage(),
-                HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        log.error("Unhandled exception", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "Something went wrong on our side."));
     }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {

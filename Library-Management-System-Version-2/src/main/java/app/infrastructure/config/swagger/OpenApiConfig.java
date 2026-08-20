@@ -9,7 +9,7 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Describes the API for Swagger UI, including the bearer token its secured endpoints need. */
+/** Configures the OpenAPI documentation. */
 @Configuration
 public class OpenApiConfig {
 
@@ -20,8 +20,6 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(apiInfo())
                 .components(new Components().addSecuritySchemes(BEARER_SCHEME, bearerScheme()))
-                // Applied globally so "Authorize" in Swagger UI reaches every secured endpoint;
-                // without it each call answers 401 and the page is of no use for trying anything.
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME));
     }
 
