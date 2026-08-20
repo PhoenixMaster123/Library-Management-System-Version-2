@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 /** Issues and verifies the tokens the API authenticates with. */
 @Component
@@ -62,8 +63,11 @@ public class JwtService {
      */
     public String getToken(String username, String role) {
         return Jwts.builder()
+                // An id, so a token can be named in the revocation list when its owner signs out.
+                .id(UUID.randomUUID().toString())
                 .subject(username)
                 .claim(ROLE_CLAIM, role)
+                .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key)
                 .compact();

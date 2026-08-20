@@ -1,6 +1,7 @@
 package app.infrastructure.config.security;
 
 import app.domain.services.JwtService;
+import app.domain.services.TokenRevocationService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,6 +28,7 @@ import java.util.List;
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final TokenRevocationService revocationService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -37,7 +39,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             Claims claims = jwtService.getClaims(request);
 
-            if (claims != null) {
+            // A signed token stays valid until it expires, so signing out only means anything if
+            // the server refuses it from then on.
+            if (claims != null && !revocationService.isRevoked(claims)) {
                 // Spring Security matches hasRole("ADMIN") against the authority "ROLE_ADMIN".
                 List<SimpleGrantedAuthority> authorities =
                         List.of(new SimpleGrantedAuthority("ROLE_" + jwtService.getRole(claims)));
