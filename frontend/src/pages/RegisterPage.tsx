@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { BrandMark } from '../components/Layout'
+import { PasswordField } from '../components/PasswordField'
 
 export function RegisterPage() {
   const { register, isAuthenticated } = useAuth()
@@ -89,19 +90,15 @@ export function RegisterPage() {
           <span className="help">3–50 characters, used to sign in.</span>
         </div>
 
-        <div className="field">
-          <label htmlFor="new-password">Password</label>
-          <input
-            id="new-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            minLength={6}
-            required
-          />
-          <span className="help">At least 6 characters.</span>
-        </div>
+        <PasswordField
+          id="new-password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          required
+          help="At least 6 characters."
+        />
 
         <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
           {busy ? 'Creating account…' : 'Create account'}
