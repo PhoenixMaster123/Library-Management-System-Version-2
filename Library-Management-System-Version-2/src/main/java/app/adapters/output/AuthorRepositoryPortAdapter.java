@@ -25,6 +25,7 @@ import java.util.Locale;
 public class AuthorRepositoryPortAdapter implements AuthorRepositoryPort {
     private final AuthorRepository authorRepository;
 
+    /** Stores a new author. */
     @Override
     public void saveAuthor(Author author) {
         AuthorEntity authorEntity = AuthorEntity.builder()
@@ -34,6 +35,8 @@ public class AuthorRepositoryPortAdapter implements AuthorRepositoryPort {
                 .build();
         authorRepository.save(authorEntity);
     }
+
+    /** One page of stored authors, books fetched with them. */
     @Override
     public Page<Author> getPaginatedAuthors(Pageable pageable) {
         Page<AuthorEntity> authorEntities = authorRepository.findAllAuthorsWithBooks(pageable);
@@ -45,6 +48,7 @@ public class AuthorRepositoryPortAdapter implements AuthorRepositoryPort {
         return new PageImpl<>(authors, pageable, authorEntities.getTotalElements());
     }
 
+    /** One page of stored authors matching a free-text query, matched case-insensitively. */
     @Override
     public Page<Author> searchAuthors(String query, Pageable pageable) {
         String queryLowerCase = query.toLowerCase(Locale.ROOT);
@@ -58,6 +62,7 @@ public class AuthorRepositoryPortAdapter implements AuthorRepositoryPort {
         return new PageImpl<>(authors, pageable, authorEntities.getTotalElements());
     }
 
+    /** Overwrites a stored author's name and bio; throws when the id is unknown. */
     @Override
     public void updateAuthor(UUID authorId, Author newAuthor) {
         AuthorEntity authorEntity = authorRepository.findById(authorId)
@@ -68,16 +73,19 @@ public class AuthorRepositoryPortAdapter implements AuthorRepositoryPort {
         authorRepository.save(authorEntity);
     }
 
+    /** Removes a stored author. */
     @Override
     public void deleteAuthor(UUID id) {
         authorRepository.deleteById(id);
     }
 
+    /** The stored author with exactly this name, or empty. */
     @Override
     public Optional<Author> searchAuthorByName(String name) {
         return authorRepository.findByName(name).map(EntityMapper::toAuthor);
     }
 
+    /** The stored author with this id, or empty. */
     @Override
     public Optional<Author> searchAuthorByID(UUID id) {
         return authorRepository.findById(id).map(EntityMapper::toAuthor);

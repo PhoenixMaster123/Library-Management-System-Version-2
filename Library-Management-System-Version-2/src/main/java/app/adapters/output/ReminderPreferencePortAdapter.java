@@ -17,6 +17,7 @@ public class ReminderPreferencePortAdapter implements ReminderPreferencePort {
 
     private final ReminderPreferenceRepository repository;
 
+    /** Stores a member's reminder choice, replacing whatever was there. */
     @Override
     public void setEnabled(UUID customerId, boolean enabled) {
         // The id is the membership, so save() upserts: one row per member, however often they change
@@ -24,6 +25,7 @@ public class ReminderPreferencePortAdapter implements ReminderPreferencePort {
         repository.save(new ReminderPreferenceEntity(customerId, enabled));
     }
 
+    /** The member's choice, or false when they have never made one. */
     @Override
     public boolean isEnabled(UUID customerId) {
         return repository.findById(customerId)

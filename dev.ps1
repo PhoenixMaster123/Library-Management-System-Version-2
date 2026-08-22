@@ -28,7 +28,7 @@
 
 .EXAMPLE
     .\dev.ps1
-    Backend on :9092 and frontend on :5173.
+    Backend on :9092 and frontend on :5174.
 
 .EXAMPLE
     .\dev.ps1 -All
@@ -56,7 +56,7 @@ $stackPorts = [ordered]@{
     '9092' = 'Library backend'
     '9093' = 'Notification-Service'
     '9095' = 'Analytics-Service'
-    '5173' = 'Frontend'
+    '5174' = 'Frontend'
 }
 
 function Get-PortOwner {
@@ -101,7 +101,9 @@ function Start-LibraryService {
 
     $proc = Get-PortOwner -Port $Port
     if ($proc) {
-        Write-Host ("  {0,-22} :{1} already in use by PID {2} ({3}) - skipping" -f $Name, $Port, $proc.Id, $proc.ProcessName) -ForegroundColor Yellow
+        # Red, not yellow: a skipped service is the reason the console looks broken later, and a
+        # yellow line in a wall of green is easy to read past.
+        Write-Host ("  {0,-22} :{1} NOT STARTED - already in use by PID {2} ({3})" -f $Name, $Port, $proc.Id, $proc.ProcessName) -ForegroundColor Red
         return
     }
 
@@ -118,28 +120,30 @@ Write-Host ''
 
 $profileArg = if ($Seed) { '' } else { ' "-Dspring-boot.run.profiles=dev"' }
 
+# All three run from the repository root with -pl: there is one Maven wrapper now, at the root, and
+# each service inherits from the root POM, so none of them can be built from its own directory.
 Start-LibraryService -Name 'Library backend' -Port 9092 `
-    -Directory (Join-Path $root 'Library-Management-System-Version-2') `
-    -Command "./mvnw spring-boot:run$profileArg"
+    -Directory $root `
+    -Command "./mvnw -pl Library-Management-System-Version-2 spring-boot:run$profileArg"
 
 if ($Notifications) {
     Start-LibraryService -Name 'Notification-Service' -Port 9093 `
-        -Directory (Join-Path $root 'Notification-Service\Notification-Service') `
-        -Command './mvnw spring-boot:run'
+        -Directory $root `
+        -Command './mvnw -pl Notification-Service spring-boot:run'
 }
 
 if ($Analytics) {
     Start-LibraryService -Name 'Analytics-Service' -Port 9095 `
-        -Directory (Join-Path $root 'Analytics-Service') `
-        -Command './mvnw spring-boot:run'
+        -Directory $root `
+        -Command './mvnw -pl Analytics-Service spring-boot:run'
 }
 
-Start-LibraryService -Name 'Frontend' -Port 5173 `
+Start-LibraryService -Name 'Frontend' -Port 5174 `
     -Directory (Join-Path $root 'frontend') `
     -Command 'npm run dev'
 
 Write-Host ''
-Write-Host 'Open http://localhost:5173 and sign in as admin / admin.' -ForegroundColor Cyan
+Write-Host 'Open http://localhost:5174 and sign in as admin / admin.' -ForegroundColor Cyan
 if (-not $Notifications) { Write-Host '  Notification-Service not started (add -Notifications; needs MySQL).' -ForegroundColor DarkGray }
 if (-not $Analytics)     { Write-Host '  Analytics-Service not started (add -Analytics; needs Kafka on 9094).' -ForegroundColor DarkGray }
 Write-Host '  Stop everything with: .\dev.ps1 -Stop' -ForegroundColor DarkGray

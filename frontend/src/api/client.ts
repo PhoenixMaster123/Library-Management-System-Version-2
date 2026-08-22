@@ -19,25 +19,31 @@ export const DEMO_MODE = import.meta.env.VITE_DEMO === 'true'
 /** Where a 401 means "those credentials are wrong", not "your session ended". */
 const SIGN_IN_PATHS = ['/api/login', '/api/register']
 
+/*
+ * sessionStorage, not localStorage: the session is scoped to the browser tab. Closing the tab or
+ * the browser and opening the console again starts at the login page instead of resuming as
+ * whoever signed in last, which is what you want on a shared machine. A refresh within the same
+ * tab still keeps you signed in - see getSession below.
+ */
 const TOKEN_KEY = 'library.jwt'
 const SESSION_KEY = 'library.session'
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  return sessionStorage.getItem(TOKEN_KEY)
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token)
+  sessionStorage.setItem(TOKEN_KEY, token)
 }
 
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(SESSION_KEY)
+  sessionStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(SESSION_KEY)
 }
 
-/** Cached so a page refresh renders the right navigation before /api/me answers. */
+/** Cached so a refresh in the same tab renders the right navigation before /api/me answers. */
 export function getSession(): Session | null {
-  const raw = localStorage.getItem(SESSION_KEY)
+  const raw = sessionStorage.getItem(SESSION_KEY)
   if (!raw) return null
   try {
     return JSON.parse(raw) as Session
@@ -47,7 +53,7 @@ export function getSession(): Session | null {
 }
 
 export function setSession(session: Session): void {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
 }
 
 export class ApiError extends Error {

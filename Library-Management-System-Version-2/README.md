@@ -36,8 +36,11 @@ Kafka and Notification-Service are both unreachable.
 
 ## Running
 
+The Maven wrapper lives at the repository root, and this module inherits from the root POM,
+so every command below is run from there with `-pl`:
+
 ```bash
-./mvnw spring-boot:run       # http://localhost:9092
+./mvnw -pl Library-Management-System-Version-2 spring-boot:run    # http://localhost:9092
 ```
 
 With an empty catalogue the application stocks itself from Open Library on first start
@@ -45,7 +48,7 @@ With an empty catalogue the application stocks itself from Open Library on first
 never makes that call:
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+./mvnw -pl Library-Management-System-Version-2 spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 |        | default profile                          | `dev` profile                             |
@@ -93,7 +96,7 @@ The application logs a warning while the default password is still in use.
 
 `spring-boot-devtools` restarts the application when the classes under `target/classes` change —
 so a restart only happens once something has **recompiled**. From the command line
-`./mvnw spring-boot:run` handles that itself. In IntelliJ it takes two settings, and without both
+`./mvnw -pl Library-Management-System-Version-2 spring-boot:run` handles that itself. In IntelliJ it takes two settings, and without both
 nothing appears to happen:
 
 - **Settings → Build → Compiler → Build project automatically**
@@ -120,11 +123,13 @@ Both fail the build. Checkstyle runs at `validate` so a style failure costs seco
 full build; PMD runs at `verify` because it wants compiled classes.
 
 ```bash
-./mvnw checkstyle:check      # style only
-./mvnw pmd:check             # bugs only
-./mvnw verify                # both, plus the tests
-./mvnw verify -Dcheckstyle.skip=true -Dpmd.skip=true
+./mvnw -pl Library-Management-System-Version-2 checkstyle:check      # style only
+./mvnw -pl Library-Management-System-Version-2 pmd:check             # bugs only
+./mvnw -pl Library-Management-System-Version-2 verify                # both, plus the tests
+./mvnw -pl Library-Management-System-Version-2 verify -Dcheckstyle.skip=true -Dpmd.skip=true
 ```
+
+Drop the `-pl` to run any of them across all three services at once.
 
 Both rulesets are deliberately narrow. Checkstyle's bundled `sun_checks.xml` reports **1806**
 violations on this codebase — demanding Javadoc on every method and an 80-column limit — and a
@@ -207,9 +212,8 @@ port returns an empty `Optional` and the frontend renders that as an explanation
 ## Testing
 
 ```bash
-./mvnw test                          # 118 unit tests, ~1 min
-./mvnw verify                        # those plus 143 integration tests, ~3.5 min
-./mvnw -f pom-docker.xml verify      # integration tests against Docker
+./mvnw -pl Library-Management-System-Version-2 test      # 118 unit tests, ~1 min
+./mvnw -pl Library-Management-System-Version-2 verify    # those plus 143 integration tests, ~3.5 min
 ```
 
 > **If the suite fails in ways that make no sense, check what else is running.** A

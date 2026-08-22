@@ -22,11 +22,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Locale;
 
-/**
- * Every write here spans several repository calls - saving a book also resolves and saves its
- * authors - so the class carries a transaction rather than leaving each call on its own. With
- * the default REQUIRED propagation a call from the (transactional) services simply joins theirs.
- */
+/** Persists books through JPA. Transactional at class level: a save also resolves and saves authors. */
 @Component
 @RequiredArgsConstructor
 @Transactional
@@ -36,6 +32,7 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
 
+    /** Stores a book, creating or reusing each of its authors. */
     @Override
     public void saveBook(Book book) {
         log.info("Saving new book: {}", book.getTitle());
@@ -75,6 +72,7 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
         log.info("Book saved with ID: {}", savedEntity.getBookId());
     }
 
+    /** Overwrites a stored book's details. */
     @Override
     public void updateBook(UUID bookID, Book newBook) {
         log.info("Updating book with ID: {}", bookID);
@@ -90,6 +88,7 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
         }, () -> log.warn("Book with ID {} not found. Update skipped.", bookID));
     }
 
+    /** Removes a stored book. */
     @Override
     public void deleteBook(UUID bookID) {
         log.info("Deleting book with ID: {}", bookID);
@@ -113,16 +112,19 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
         }
     }
 
+    /** One page of the stored catalogue. */
     @Override
     public Page<Book> getPaginatedBooks(Pageable pageable) {
         return bookRepository.findAll(pageable).map(EntityMapper::toBook);
     }
 
+    /** The stored book with exactly this title, or empty. */
     @Override
     public Optional<Book> searchBookByTitle(String title) {
         return bookRepository.findBookByTitle(title).map(EntityMapper::toBook);
     }
 
+    /** A stored book by this author, narrowed by availability. */
     @Override
     public Optional<Book> searchBookByAuthors(String author, boolean isAvailable) {
         return bookRepository.findBooksByAuthor(author, isAvailable).stream()
@@ -130,16 +132,19 @@ public class BookRepositoryPortAdapter implements BookRepositoryPort {
                 .findFirst();
     }
 
+    /** The stored book with this ISBN, or empty. */
     @Override
     public Optional<Book> searchByIsbn(String isbn) {
         return bookRepository.findBooksByIsbn(isbn).map(EntityMapper::toBook);
     }
 
+    /** The stored book with this id, or empty. */
     @Override
     public Optional<Book> searchBookById(UUID id) {
         return bookRepository.findBookByBookId(id).map(EntityMapper::toBook);
     }
 
+    /** One page of stored books matching a free-text query. */
     @Override
     public Page<Book> searchBooks(String query, Pageable pageable) {
         return bookRepository.findBooksByQuery(query.toLowerCase(Locale.ROOT), pageable).map(EntityMapper::toBook);

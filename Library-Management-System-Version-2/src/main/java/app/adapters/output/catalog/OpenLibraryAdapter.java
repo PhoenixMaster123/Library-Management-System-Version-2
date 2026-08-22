@@ -17,12 +17,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Looks books up in Open Library.
- *
- * <p>Read through {@link JsonNode} rather than mapped types: the shape varies by edition, and
- * {@code description} is sometimes a string and sometimes an object.
- */
+/** Looks books up in Open Library, reading raw JSON because the shape varies by edition. */
 @Component
 @Slf4j
 public class OpenLibraryAdapter implements BookCatalogPort {
@@ -35,16 +30,12 @@ public class OpenLibraryAdapter implements BookCatalogPort {
 
     private final RestClient restClient;
 
+    /** Takes the shared catalogue client, so tests can pass a stubbed one. */
     public OpenLibraryAdapter(RestClient catalogRestClient) {
         this.restClient = catalogRestClient;
     }
 
-    /**
-     * Only hits are cached, so a timeout is retried rather than remembered as "no such book".
-     *
-     * <p>The condition tests {@code #result == null} because Spring unwraps the {@link Optional}
-     * before evaluating it; {@code isEmpty()} here fails at runtime with EL1004.
-     */
+    /** The book for one ISBN, or empty. Only hits are cached, so a timeout is retried. */
     @Override
     @Cacheable(cacheNames = "catalogLookup", key = "#isbn", unless = "#result == null")
     public Optional<CreateNewBook> findByIsbn(String isbn) {
@@ -76,11 +67,7 @@ public class OpenLibraryAdapter implements BookCatalogPort {
                 authors));
     }
 
-    /**
-     * Cached because the catalogue takes seconds to answer and readers page back and forth through
-     * the same query. Only non-empty results are kept, so a timeout is retried rather than
-     * remembered.
-     */
+    /** One page of search hits. Cached because readers page back and forth over the same query. */
     @Override
     @Cacheable(cacheNames = "catalogSearch",
             key = "#query.toLowerCase() + '#' + #page + '#' + #size",
@@ -177,6 +164,7 @@ public class OpenLibraryAdapter implements BookCatalogPort {
         }
     }
 
+    /** Author records from a lookup, where they are objects. */
     private List<CreateNewAuthor> readAuthors(JsonNode node) {
         List<CreateNewAuthor> authors = new ArrayList<>();
         for (JsonNode author : node.path("authors")) {

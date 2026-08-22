@@ -13,10 +13,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-/**
- * Calls Notification-Service. Every failure is swallowed and logged, so an unreachable
- * notification service can never fail a borrow.
- */
+/** Calls Notification-Service. Every failure is swallowed and logged, so it cannot fail a borrow. */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -29,6 +26,7 @@ public class NotificationServiceAdapter implements NotificationPort {
     @Value("${notification.enabled:true}")
     private boolean notificationsEnabled;
 
+    /** Emails the member what they borrowed and when it is due. */
     @Override
     public void notifyBookBorrowed(Customer customer, Book book, LocalDate dueDate) {
         String subject = "You borrowed \"" + book.getTitle() + "\"";
@@ -40,6 +38,7 @@ public class NotificationServiceAdapter implements NotificationPort {
         dispatch(customer, subject, body);
     }
 
+    /** Emails the member that their return was received. */
     @Override
     public void notifyBookReturned(Customer customer, Book book) {
         String subject = "Thanks for returning \"" + book.getTitle() + "\"";
@@ -51,6 +50,7 @@ public class NotificationServiceAdapter implements NotificationPort {
         dispatch(customer, subject, body);
     }
 
+    /** Emails the member that a book is due back soon. */
     @Override
     public void notifyDueSoon(Customer customer, Book book, LocalDate dueDate) {
         String subject = "\"" + book.getTitle() + "\" is due back soon";
@@ -62,6 +62,7 @@ public class NotificationServiceAdapter implements NotificationPort {
         dispatch(customer, subject, body);
     }
 
+    /** Mirrors a reminder choice outward, swallowing any failure. */
     @Override
     public void saveReminderSetting(UUID customerId, ReminderSetting setting) {
         try {
@@ -71,6 +72,7 @@ public class NotificationServiceAdapter implements NotificationPort {
         }
     }
 
+    /** Sends one message, unless notifications are off or the member has no id. Never throws. */
     private void dispatch(Customer customer, String subject, String body) {
         if (!notificationsEnabled) {
             return;

@@ -9,22 +9,12 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Counts failed sign-ins and locks an account out for a while once there have been too many.
- *
- * <p>Without this a password can be guessed at network speed, which makes the strength of the
- * password the only thing standing in the way. Attempts are counted per username rather than per
- * address: an attacker can change address far more easily than they can change whose account they
- * are trying to open.
- *
- * <p>Held in memory, so the count resets when the application does. That is a deliberate limit
- * rather than an oversight - surviving a restart means a shared store, and the point here is to
- * turn an instant guessing loop into a slow one.
- */
+/** Counts failed sign-ins per username and locks the account out for a while. In memory only. */
 @Service
 @Slf4j
 public class LoginAttemptService {
 
+    /** How many failures, when they started, and until when the account stays locked. */
     private record Attempts(int count, Instant firstFailure, Instant lockedUntil) {
     }
 
@@ -40,6 +30,7 @@ public class LoginAttemptService {
     @Value("${library.login.window:PT15M}")
     private Duration window;
 
+    /** True while the account is locked; clears the entry once the lockout has passed. */
     public boolean isLockedOut(String username) {
         Attempts current = attempts.get(key(username));
         if (current == null || current.lockedUntil() == null) {
@@ -61,6 +52,7 @@ public class LoginAttemptService {
         return Math.max(0, Duration.between(Instant.now(), current.lockedUntil()).toSeconds());
     }
 
+    /** Counts one failed sign-in, locking the account once the limit is hit inside the window. */
     public void recordFailure(String username) {
         String key = key(username);
         Instant now = Instant.now();
@@ -84,6 +76,7 @@ public class LoginAttemptService {
         attempts.remove(key(username));
     }
 
+    /** Usernames are counted case-insensitively, so changing case cannot dodge the counter. */
     private static String key(String username) {
         return username == null ? "" : username.toLowerCase(java.util.Locale.ROOT);
     }

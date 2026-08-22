@@ -13,8 +13,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
+    /** Name of the security scheme Swagger's Authorize button fills in. */
     static final String BEARER_SCHEME = "bearerAuth";
 
+    /** The published API document, with bearer auth applied to every endpoint. */
     @Bean
     public OpenAPI libraryOpenApi() {
         return new OpenAPI()
@@ -23,6 +25,7 @@ public class OpenApiConfig {
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_SCHEME));
     }
 
+    /** Title, version and the note explaining how to sign in from Swagger. */
     private static Info apiInfo() {
         return new Info()
                 .title("Library Management System API")
@@ -36,6 +39,7 @@ public class OpenApiConfig {
                 .license(new License().name("MIT").url("https://opensource.org/licenses/MIT"));
     }
 
+    /** Declares the JWT bearer scheme Authorize prompts for. */
     private static SecurityScheme bearerScheme() {
         return new SecurityScheme()
                 .name(BEARER_SCHEME)

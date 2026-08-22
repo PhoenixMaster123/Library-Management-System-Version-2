@@ -21,6 +21,7 @@ public class Customer {
     private boolean privileges;
     private final List<Transaction> transactions = new LinkedList<>();
 
+    /** A new member with no id yet; storage assigns one. */
     public Customer(String name, String email, boolean privileges) {
         this(null, name, email, privileges);
     }

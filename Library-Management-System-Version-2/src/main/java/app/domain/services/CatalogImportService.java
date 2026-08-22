@@ -14,16 +14,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Puts books from the external catalogue onto the shelves.
- *
- * <p>{@link #importAll} looks ISBNs up; {@link #addCandidate} stocks a search result as it stands.
- * Already-stocked books are skipped rather than treated as failures.
- */
+/** Puts books from the external catalogue onto the shelves. Already-stocked ones are skipped. */
 @Service
 @RequiredArgsConstructor
 public class CatalogImportService {
 
+    /** Stands in when the catalogue names no author at all. */
     private static final String UNKNOWN_AUTHOR = "Unknown author";
 
     private final BookCatalogPort bookCatalogPort;
@@ -33,12 +29,7 @@ public class CatalogImportService {
     public record ImportSummary(List<String> imported, List<String> skipped) {
     }
 
-    /**
-     * Stocks books by ISBN alone, looking each one up for its blurb and authors. Used by the desk's
-     * bulk import, where the librarian has a list of ISBNs rather than search results in hand.
-     *
-     * <p>Neither a missing book nor an already-stocked one fails the rest of the batch.
-     */
+    /** Stocks books from ISBNs, looking each one up. One bad ISBN never fails the rest of the batch. */
     public ImportSummary importAll(List<String> isbns) {
         List<String> imported = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
@@ -62,13 +53,7 @@ public class CatalogImportService {
         return new ImportSummary(imported, skipped);
     }
 
-    /**
-     * Stocks search results in bulk, with no lookup per book.
-     *
-     * <p>That is what makes the startup seed affordable: four hundred books cost twelve searches
-     * here where {@link #importAll} would cost four hundred round trips. The blurbs they lack are
-     * fetched by {@code CatalogEnrichmentService} as books are opened.
-     */
+    /** Stocks search results in bulk with no per-book lookup, which is what makes the seed affordable. */
     public ImportSummary importCandidates(Collection<CatalogCandidate> candidates) {
         List<String> imported = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
@@ -88,16 +73,7 @@ public class CatalogImportService {
         return new ImportSummary(imported, skipped);
     }
 
-    /**
-     * Stocks exactly the book the reader picked out of the search results.
-     *
-     * <p>Deliberately built from the candidate rather than from a fresh ISBN lookup. A search hit's
-     * ISBN belongs to one particular edition, so looking it up again can come back in another
-     * language - clicking "A Wizard of Earthsea" put "Czarnoksiężnik z Archipelagu" on the shelf.
-     * The blurb is filled in later by {@code CatalogEnrichmentService}, on first view.
-     *
-     * @throws IllegalArgumentException when the book is already on the shelves
-     */
+    /** Stocks the exact edition picked, not a re-lookup, which could return another language. */
     public Book addCandidate(CatalogCandidate candidate) {
         List<CreateNewAuthor> authors = candidate.authors() == null
                 ? List.of()

@@ -8,18 +8,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Whether this service is actually attached to the event stream.
- *
- * <p>Without this the statistics are ambiguous in a way that matters: an empty projection looks
- * identical whether nothing has ever been borrowed or the broker has been unreachable the whole
- * time. The first is a fact about the library; the second is a fact about the plumbing, and
- * reporting it as the first tells the reader something untrue.
- *
- * <p>Connectivity is read from the listener container's partition assignments rather than by
- * pinging the broker: a consumer holding assignments is by definition talking to one, and the
- * answer costs no I/O.
- */
+/** Whether the service is attached to the event stream, so empty totals are not read as "never borrowed". */
 @Component
 @RequiredArgsConstructor
 public class StreamHealth {
@@ -33,17 +22,12 @@ public class StreamHealth {
         lastEvent.set(Instant.now());
     }
 
+    /** When the last event arrived, or null if none has yet. */
     public Instant lastEventAt() {
         return lastEvent.get();
     }
 
-    /**
-     * True when at least one listener container holds a partition assignment.
-     *
-     * <p>Note this is false for a short window after start-up, before the group has rebalanced,
-     * and false when the broker is up but the topic does not exist yet - in both cases no event
-     * can arrive, which is exactly what the caller is asking about.
-     */
+    /** True when a listener holds a partition assignment; false while starting up or if the topic is absent. */
     public boolean connected() {
         for (MessageListenerContainer container : registry.getListenerContainers()) {
             if (container.isRunning()) {

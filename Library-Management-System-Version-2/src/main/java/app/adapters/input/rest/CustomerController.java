@@ -40,10 +40,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class CustomerController extends PaginatedController {
     private final CustomerUseCase customerUseCase;
 
-    /**
-     * No BindingResult: letting {@code @Valid} throw means GlobalExceptionHandler answers with the
-     * field errors, and this method can promise a concrete Customer instead of a wildcard.
-     */
+    /** Registers a member. Validation failures are left to the handler, so this returns a Customer. */
     @PostMapping(produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Create a new customer")
     public ResponseEntity<Customer> createNewCustomer(@Valid @RequestBody CreateNewCustomer newCustomer) {
@@ -52,6 +49,8 @@ public class CustomerController extends PaginatedController {
 
     @GetMapping(value = "/{id}",
             produces = {"application/single-customer-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** One member with their loans; 404 when the id matches nothing. */
     @Operation(summary = "Get a single customer")
     public ResponseEntity<Map<String, Object>> getCustomerById(@PathVariable UUID id) {
         Optional<Customer> customerOpt = customerUseCase.findCustomerById(id);
@@ -75,6 +74,8 @@ public class CustomerController extends PaginatedController {
 
     @GetMapping(value = "/search",
             produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** Finds members by name, id or free text, as one page of results. */
     @Operation(summary = "Search for a customer by name or ID or query")
     public ResponseEntity<Map<String, Object>> getCustomer(
             @RequestParam(required = false) UUID id,
@@ -117,6 +118,8 @@ public class CustomerController extends PaginatedController {
 
     @GetMapping(value = "/paginated",
             produces = {"application/paginated-customers-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** One page of members. */
     @Operation(summary = "Get all customers")
     public ResponseEntity<Map<String, Object>> getAllCustomers(
             @RequestParam(defaultValue = "0") int page,
@@ -144,6 +147,8 @@ public class CustomerController extends PaginatedController {
 
     @PutMapping(value = "/{id}",
             produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** Overwrites a member's name, email and privileges. */
     @Operation(summary = "Update a customer")
     public ResponseEntity<String> updateCustomer(@PathVariable UUID id,
                                                  @Valid @RequestBody Customer customer,
@@ -158,6 +163,8 @@ public class CustomerController extends PaginatedController {
 
     @PutMapping(value = "/{id}/privileges",
             produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** Grants or withdraws a member's borrowing privileges. */
     @Operation(summary = "Update a customer privileges")
     public ResponseEntity<String> updateCustomerPrivileges(@PathVariable UUID id,
                                                            @RequestBody(required = false) Boolean privileges) {
@@ -170,6 +177,8 @@ public class CustomerController extends PaginatedController {
 
     @DeleteMapping(value = "/{id}",
             produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** Removes a membership. */
     @Operation(summary = "Delete a customer")
     public ResponseEntity<String> deleteCustomer(@PathVariable UUID id) {
         customerUseCase.deleteCustomer(id);

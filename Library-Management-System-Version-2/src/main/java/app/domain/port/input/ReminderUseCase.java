@@ -10,9 +10,6 @@ public interface ReminderUseCase {
     /** The member's current choice, with the address reminders would go to. */
     ReminderSetting settingFor(UUID customerId);
 
-    /**
-     * Turns reminders on or off. The address is never taken from the caller - it is the one on the
-     * membership - so switching reminders on cannot redirect them somewhere else.
-     */
+    /** Turns reminders on or off. The address always comes from the membership, never the caller. */
     ReminderSetting updateSetting(UUID customerId, boolean enabled);
 }

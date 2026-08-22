@@ -7,10 +7,7 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-/**
- * Wire format expected by Notification-Service's {@code POST /api/v1/notifications}.
- * Adapter-local on purpose: the domain must not know this shape.
- */
+/** Wire format for Notification-Service's send endpoint. Adapter-local: the domain must not know it. */
 @Getter
 @Setter
 @NoArgsConstructor

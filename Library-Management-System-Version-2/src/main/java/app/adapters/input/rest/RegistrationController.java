@@ -38,6 +38,7 @@ public class RegistrationController {
     private final CustomerUseCase customerUseCase;
     private final PasswordEncoder passwordEncoder;
 
+    /** Creates an account and its membership together; 409 when the username is taken. */
     @PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Create an account and the matching library membership")
     @Transactional
@@ -70,6 +71,7 @@ public class RegistrationController {
         ));
     }
 
+    /** The first validation message, or a generic one when there is none. */
     private String firstErrorMessage(BindingResult bindingResult) {
         FieldError error = bindingResult.getFieldError();
         return (error == null || error.getDefaultMessage() == null)

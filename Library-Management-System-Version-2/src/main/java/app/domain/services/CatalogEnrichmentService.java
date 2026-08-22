@@ -8,11 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-/**
- * Fills in a book's blurb the first time it is opened, and writes it back.
- *
- * <p>Not called from the borrow or edit paths, which must not wait on an external catalogue.
- */
+/** Fills in a book's blurb the first time it is opened. Never on the borrow or edit paths. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,6 +17,7 @@ public class CatalogEnrichmentService {
     private final CatalogDescriptionLookup descriptionLookup;
     private final BookUseCase bookUseCase;
 
+    /** Backfills a missing blurb and saves it. Returns the book either way, and never throws. */
     public Book withDescription(Book book) {
         if (book == null || hasText(book.getDescription()) || !hasText(book.getIsbn())) {
             return book;
@@ -42,6 +39,7 @@ public class CatalogEnrichmentService {
         }
     }
 
+    /** True when the value is neither null nor blank. */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }

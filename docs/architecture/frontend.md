@@ -1,6 +1,6 @@
 # Frontend
 
-React 19, TypeScript, Vite. Port 5173 in development. The only human-facing surface in the system.
+React 19, TypeScript, Vite. Port 5174 in development. The only human-facing surface in the system.
 Source: `frontend/`.
 
 ## Shape
@@ -39,7 +39,7 @@ answers 403 regardless.
 
 ## Talking to the backend
 
-The backend has **no CORS configuration**, so a direct call from :5173 to :9092 would be blocked.
+The backend has **no CORS configuration**, so a direct call from :5174 to :9092 would be blocked.
 `vite.config.ts` proxies everything under `/backend` instead, which makes every request same-origin
 from the browser's point of view:
 

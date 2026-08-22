@@ -22,6 +22,7 @@ public class AnalyticsServiceAdapter implements LoanStatisticsPort {
     @Value("${analytics.enabled:true}")
     private boolean analyticsEnabled;
 
+    /** The statistics, or empty when analytics is switched off or cannot be reached. */
     @Override
     public Optional<LoanStatistics> fetch(int limit) {
         if (!analyticsEnabled) {
@@ -54,6 +55,7 @@ public class AnalyticsServiceAdapter implements LoanStatisticsPort {
         }
     }
 
+    /** Maps the wire records to domain stats, skipping nulls. */
     private static List<LoanStatistics.BookStat> toBookStats(List<PopularBookResponse> popular) {
         if (popular == null) {
             return List.of();

@@ -32,10 +32,7 @@ public class TransaktionRepositoryPortAdapter implements TransactionRepositoryPo
     private final BookRepository bookRepository;
     private final CustomerRepository customerRepository;
 
-    /**
-     * The lookups and the save must share one persistence context: without it the book found here
-     * is detached by the time the transaction is saved, and the cascade onto it fails.
-     */
+    /** Stores a loan. Lookups and save share one context, or the cascade onto the book fails. */
     @Override
     public void saveTransaction(Transaction transaction) {
         // The id is left unset: @GeneratedValue assigns it on persist, and setting it here would
@@ -66,6 +63,7 @@ public class TransaktionRepositoryPortAdapter implements TransactionRepositoryPo
 
     }
 
+    /** Every stored loan recorded against one book. */
     @Override
     public List<Transaction> getTransactionsForBook(Book book) {
         return transactionRepository.findByBookBookId(book.getBookId())
@@ -74,39 +72,46 @@ public class TransaktionRepositoryPortAdapter implements TransactionRepositoryPo
                 .toList();
     }
 
+    /** One page of one member's stored loans. */
     @Override
     public Page<Transaction> viewBorrowingHistory(UUID customerID, Pageable pageable) {
         return transactionRepository.findByCustomerCustomerId(customerID, pageable)
                 .map(EntityMapper::toTransaction);
     }
 
+    /** The stored loan with this id, or empty. */
     @Override
     public Optional<Transaction> findTransactionById(UUID transactionId) {
         return transactionRepository.findById(transactionId)
                 .map(EntityMapper::toTransaction);
     }
 
+    /** The loan a book is out on, or empty when it is on the shelf. */
     @Override
     public Optional<Transaction> findActiveLoanForBook(UUID bookId) {
         return transactionRepository.findFirstByBookBookIdAndReturnDateIsNull(bookId)
                 .map(EntityMapper::toTransaction);
     }
 
+    /** One page of every stored loan. */
     @Override
     public Page<Transaction> findAllTransactions(Pageable pageable) {
         return transactionRepository.findAll(pageable).map(EntityMapper::toTransaction);
     }
 
+    /** One page of the loans still outstanding. */
     @Override
     public Page<Transaction> findActiveLoans(Pageable pageable) {
         return transactionRepository.findByReturnDateIsNull(pageable).map(EntityMapper::toTransaction);
     }
 
+    /** How many books a member has out right now. */
     @Override
     public long countActiveLoans(UUID customerId) {
         return transactionRepository.countByCustomerCustomerIdAndReturnDateIsNull(customerId);
     }
 
+    /** Loans still out and falling due on this date. */
     @Override
     public List<Transaction> findLoansDueOn(LocalDate dueDate) {
         return transactionRepository.findByReturnDateIsNullAndDueDate(dueDate)
@@ -115,6 +120,7 @@ public class TransaktionRepositoryPortAdapter implements TransactionRepositoryPo
                 .toList();
     }
 
+    /** Writes a changed loan back to storage. */
     @Override
     public void updateTransaction(Transaction transaction) {
         TransactionEntity entity = transactionRepository.findById(transaction.getTransactionId())

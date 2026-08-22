@@ -35,12 +35,14 @@ public class UserEntity {
     /** The library member this account belongs to. Null for staff accounts such as the seeded admin. */
     private UUID customerId;
 
+    /** A staff account, with no membership behind it. */
     public UserEntity(String username, String password, String role) {
         this.username = username;
         this.password = password;
         this.role = role;
     }
 
+    /** An account belonging to a library member. */
     public UserEntity(String username, String password, String role, UUID customerId) {
         this(username, password, role);
         this.customerId = customerId;

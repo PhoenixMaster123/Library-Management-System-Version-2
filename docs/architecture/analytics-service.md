@@ -98,9 +98,10 @@ it from logging a stack trace every few seconds. It simply never sees an event.
 
 ## Running
 
+From the repository root:
+
 ```bash
-cd Analytics-Service
-./mvnw spring-boot:run       # http://localhost:9095
+./mvnw -pl Analytics-Service spring-boot:run       # http://localhost:9095
 ```
 
 See [`../../Analytics-Service/README.md`](../../Analytics-Service/README.md).

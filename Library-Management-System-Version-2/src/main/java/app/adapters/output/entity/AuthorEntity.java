@@ -21,10 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Getter/Setter rather than {@code @Data}: hashing over the mutable {@code books} association
- * would corrupt any HashSet an author is already in, which is what saving a book does.
- */
+/** An author as stored. Getter/Setter, not @Data: hashing the mutable books set would corrupt it. */
 @Entity
 @Table(name = "authors")
 @Getter

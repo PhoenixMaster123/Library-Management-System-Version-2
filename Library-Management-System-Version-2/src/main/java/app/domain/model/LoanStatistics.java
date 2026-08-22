@@ -4,12 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Borrowing statistics, as read back from Analytics-Service.
- *
- * <p>{@code streamConnected} is false when no event can reach it, which is not the same as no
- * borrowing having happened.
- */
+/** Borrowing statistics from Analytics-Service. streamConnected false means unreachable, not idle. */
 public record LoanStatistics(
         long booksTracked,
         long totalBorrows,
@@ -19,6 +14,7 @@ public record LoanStatistics(
         Instant lastEventAt,
         List<BookStat> popularBooks) {
 
+    /** Copies the ranked list defensively and turns a null one into an empty one. */
     public LoanStatistics {
         popularBooks = popularBooks == null ? List.of() : List.copyOf(popularBooks);
     }

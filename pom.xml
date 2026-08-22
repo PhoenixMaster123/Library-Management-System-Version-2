@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      A real parent, not just an aggregator: the three services take their parent from here rather
+      than from spring-boot-starter-parent directly, so everything below - the Java release, the
+      plugin versions, the Checkstyle and PMD wiring, the Lombok processor path - is declared once
+      instead of three times. Boot's own management still reaches the modules, through this POM.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.4</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>app</groupId>
+    <artifactId>library-management-system</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Library Management System</name>
+    <description>
+        A library catalogue with borrowing and returns, plus two supporting services: notifications
+        over HTTP and borrowing statistics fed by Kafka. The React console lives in frontend/ and is
+        built with npm, so it is not a module here.
+    </description>
+
+    <!--
+      Build order is worked out from the dependencies between modules, not from this list. There are
+      none today - the services share a Kafka topic and an HTTP contract, not a jar - so the order
+      below is simply the order a reader wants them in.
+    -->
+    <modules>
+        <module>Library-Management-System-Version-2</module>
+        <module>Notification-Service</module>
+        <module>Analytics-Service</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.0.0</maven-failsafe-plugin.version>
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+        <checkstyle.version>10.21.1</checkstyle.version>
+        <maven-pmd-plugin.version>3.26.0</maven-pmd-plugin.version>
+
+        <!--
+          Where the shared rulesets live. maven.multiModuleProjectDirectory is set by the mvn/mvnw
+          launcher to the topmost directory holding a .mvn/ - which, now that the per-module
+          wrappers are gone and there is exactly one at the root, is this directory. Before the
+          parent POM each module resolved the same two files with its own ../ or ../../ prefix.
+        -->
+        <config.dir>${maven.multiModuleProjectDirectory}/config</config.dir>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <!--
+                          release, not source/target: those emit 21 bytecode but still compile
+                          against whatever JDK is installed, so an API added after 21 builds on a
+                          developer machine and fails on a JDK 21 runner. release pins the API
+                          surface too.
+                        -->
+                        <release>${java.version}</release>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <!-- Version managed by spring-boot-dependencies. -->
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <!-- Compile-time only: it has no business in the runnable jar. -->
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+                    </configuration>
+                </plugin>
+
+                <!--
+                  The *IT classes, at the integration-test phase. Without this they never ran:
+                  surefire's default includes are *Test, Test* and *Tests, none of which match an
+                  IT suffix, so `mvn verify` quietly skipped every integration test.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
+                    <configuration>
+                        <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+                        <includes>
+                            <include>**/*IT.java</include>
+                        </includes>
+                        <excludes>
+                            <exclude>**/*Test.java</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <!--
+              Checkstyle - layout and naming, from config/checkstyle/checkstyle.xml.
+
+              Bound to `validate` so it runs before anything compiles: a style failure should cost
+              seconds, not a full build. The ruleset is deliberately narrow - Checkstyle's bundled
+              sun_checks.xml reports over 1800 violations on this codebase, which is a ruleset
+              nobody keeps switched on. Bypass with -Dcheckstyle.skip=true.
+
+              Declared here rather than in pluginManagement so every module inherits the execution
+              and not merely the configuration. This POM has no sources of its own, so on the root
+              it finds nothing to check and passes.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <dependencies>
+                    <!-- The plugin ships an old Checkstyle; pin a current one explicitly. -->
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <configLocation>${config.dir}/checkstyle/checkstyle.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failOnViolation>true</failOnViolation>
+                    <violationSeverity>error</violationSeverity>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              PMD - bug patterns, from config/pmd/ruleset.xml. Runs at `verify` because it wants
+              compiled classes. It skips pom packaging on its own, so the root is a no-op.
+              Bypass with -Dpmd.skip=true.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${maven-pmd-plugin.version}</version>
+                <configuration>
+                    <rulesets>
+                        <ruleset>${config.dir}/pmd/ruleset.xml</ruleset>
+                    </rulesets>
+                    <printFailingErrors>true</printFailingErrors>
+                    <failOnViolation>true</failOnViolation>
+                    <includeTests>false</includeTests>
+                    <targetJdk>${java.version}</targetJdk>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

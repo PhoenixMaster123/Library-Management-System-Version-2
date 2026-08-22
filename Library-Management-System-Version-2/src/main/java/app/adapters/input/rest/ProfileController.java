@@ -21,13 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * What the signed-in account can be told about itself.
- *
- * <p>Separate from {@code /customers}, which is administrators only: a member reading their own
- * name and email is not the same permission as reading everybody's, and folding the two together
- * would mean opening the member list to get a settings page.
- */
+/** The signed-in account's own details. Separate from /customers, which is administrators only. */
 @RestController
 @RequestMapping("/api/profile")
 @Tag(name = "Profile Controller", description = "The signed-in account's own details")
@@ -38,6 +32,7 @@ public class ProfileController {
     private final CustomerRepositoryPort customerRepositoryPort;
     private final TransactionRepositoryPort transactionRepositoryPort;
 
+    /** Username, role and loan limit, plus name, email and active loans when the account is a member. */
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "My account details")
     public ResponseEntity<Map<String, Object>> myProfile(Authentication authentication) {
@@ -62,6 +57,7 @@ public class ProfileController {
         return ResponseEntity.ok(profile);
     }
 
+    /** The account's first authority, with the ROLE_ prefix stripped. */
     private String roleOf(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

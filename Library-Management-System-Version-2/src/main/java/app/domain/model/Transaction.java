@@ -23,6 +23,7 @@ public class Transaction {
     private Customer customer;
     private Book book;
 
+    /** A loan already known by id, with the member and book attached. */
     public Transaction(UUID transactionId, LocalDate borrowDate, LocalDate returnDate,
                        LocalDate dueDate, Customer customer, Book book) {
         this.transactionId = transactionId;
@@ -33,6 +34,7 @@ public class Transaction {
         this.setBook(book);
     }
 
+    /** A brand-new loan: generates its id and leaves the return date open. */
     public Transaction(LocalDate borrowDate, LocalDate dueDate, Customer customer, Book book) {
         this.transactionId = UUID.randomUUID();
         this.borrowDate = borrowDate;
@@ -42,6 +44,7 @@ public class Transaction {
         this.setBook(book);
     }
 
+    /** Just the dates, for callers that attach the member and book afterwards. */
     public Transaction(UUID transactionId, LocalDate borrowDate, LocalDate returnDate, LocalDate dueDate) {
         this.transactionId = transactionId;
         this.borrowDate = borrowDate;
@@ -49,16 +52,13 @@ public class Transaction {
         this.dueDate = dueDate;
     }
 
-    /**
-     * Also derives {@link #customerId}. Final because the constructors call it: an overridable
-     * method invoked during construction can run subclass code against a half-built object.
-     */
+    /** Sets the borrower and derives customerId. Final because the constructors call it. */
     public final void setCustomer(Customer customer) {
         this.customer = customer;
         this.customerId = customer != null ? customer.getCustomerId() : null;
     }
 
-    /** Also derives {@link #bookId}. Final for the same reason as {@link #setCustomer}. */
+    /** Sets the book and derives bookId. Final for the same reason as setCustomer. */
     public final void setBook(Book book) {
         this.book = book;
         this.bookId = book != null ? book.getBookId() : null;

@@ -1,7 +1,7 @@
 # Notification-Service
 
 Spring Boot, Java 21, port 9093. Sends and records notifications, and stores each member's
-notification preference. Source: `Notification-Service/Notification-Service/`.
+notification preference. Source: `Notification-Service/`.
 
 **Optional.** The library calls it over OpenFeign with 2s connect / 3s read timeouts and swallows
 every failure, so borrowing a book succeeds whether or not this service is running.
@@ -106,9 +106,10 @@ constructor argument when a host is present, and without it the context will not
 
 ## Running
 
+From the repository root:
+
 ```bash
-cd Notification-Service
-./mvnw spring-boot:run       # http://localhost:9093
+./mvnw -pl Notification-Service spring-boot:run    # http://localhost:9093
 ```
 
 Needs MySQL on 3306. See [`../../Notification-Service/README.md`](../../Notification-Service/README.md).

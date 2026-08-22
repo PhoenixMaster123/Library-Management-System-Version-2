@@ -8,17 +8,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-/**
- * One cached blurb lookup per ISBN, caching misses too.
- *
- * <p>A separate bean because {@code @Cacheable} does nothing when a class calls its own method.
- */
+/** One cached blurb lookup per ISBN, misses included. A separate bean so the caching applies. */
 @Component
 @RequiredArgsConstructor
 public class CatalogDescriptionLookup {
 
     private final BookCatalogPort bookCatalogPort;
 
+    /** The blurb for an ISBN, or empty when there is none. Blank blurbs count as none. */
     @Cacheable(cacheNames = "catalogDescription", key = "#isbn")
     public Optional<String> forIsbn(String isbn) {
         return bookCatalogPort.findByIsbn(isbn)

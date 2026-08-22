@@ -21,6 +21,7 @@ import java.util.UUID;
 public class CustomerService implements CustomerUseCase {
     private final CustomerRepositoryPort customerRepositoryPort;
 
+    /** Registers a member, with borrowing privileges switched on. */
     @Override
     public Customer createNewCustomer(CreateNewCustomer createNewCustomer) {
         Customer customer = new Customer(null, createNewCustomer.getName(), createNewCustomer.getEmail(), true);
@@ -28,26 +29,31 @@ public class CustomerService implements CustomerUseCase {
         return customer;
     }
 
+    /** The member with this id, or empty. */
     @Override
     public Optional<Customer> findCustomerById(UUID id) {
         return customerRepositoryPort.getCustomer(id);
     }
 
+    /** The member with exactly this name, or empty. */
     @Override
     public Optional<Customer> findCustomerByName(String customerName) {
         return customerRepositoryPort.getCustomerByName(customerName);
     }
 
+    /** One page of members. */
     @Override
     public Page<Customer> getPaginatedCustomers(Pageable pageable) {
         return customerRepositoryPort.getPaginatedCustomers(pageable);
     }
 
+    /** One page of members matching a free-text query. */
     @Override
     public Page<Customer> searchCustomer(String query, Pageable pageable) {
         return customerRepositoryPort.searchCustomer(query, pageable);
     }
 
+    /** Grants or withdraws borrowing privileges; throws when the member is unknown. */
     @Override
     public void updatePrivileges(UUID id, boolean privileges) {
         Customer customer = customerRepositoryPort.getCustomer(id)
@@ -57,6 +63,7 @@ public class CustomerService implements CustomerUseCase {
         customerRepositoryPort.updatePrivileges(customer);
     }
 
+    /** Overwrites a member's details; throws when the member is unknown. */
     @Override
     public void updateCustomer(Customer customer) {
         if (customerRepositoryPort.getCustomer(customer.getCustomerId()).isEmpty()) {
@@ -65,6 +72,7 @@ public class CustomerService implements CustomerUseCase {
         customerRepositoryPort.updateCustomer(customer);
     }
 
+    /** Removes a membership. */
     @Override
     public void deleteCustomer(UUID id) {
         customerRepositoryPort.deleteCustomer(id);

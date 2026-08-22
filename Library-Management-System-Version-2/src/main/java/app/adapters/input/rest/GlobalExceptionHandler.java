@@ -39,27 +39,22 @@ public class GlobalExceptionHandler {
         return Map.of("message", ex.getMessage() == null ? fallback : ex.getMessage());
     }
 
-    /**
-     * A path that matches nothing is a 404, not a server error. The catch-all below would otherwise
-     * turn every mistyped URL - and every disabled endpoint, such as Swagger in production - into a
-     * 500, which reads as "we broke" rather than "that is not here".
-     */
+    /** A path that matches nothing is a 404, not the catch-all's 500. */
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, String>> handleNoResource(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("message", "We could not find what you were looking for."));
     }
 
-    /**
-     * The last resort. The detail goes to the log, not to the caller: an exception message can
-     * carry a query, a file path or a class name, and none of that is the client's business.
-     */
+    /** The last resort. The detail goes to the log, never to the caller. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         log.error("Unhandled exception", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("message", "Something went wrong on our side."));
     }
+
+    /** Answers 400 with one entry per rejected field. */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -67,6 +62,8 @@ public class GlobalExceptionHandler {
                 errors.put(error.getField(), error.getDefaultMessage()));
         return ResponseEntity.badRequest().body(errors);
     }
+
+    /** Answers 400 when a path variable will not parse, naming the value that failed. */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatch(
             MethodArgumentTypeMismatchException ex) {
@@ -81,6 +78,8 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Invalid request"));
     }
+
+    /** Answers 401 for a wrong username or password. */
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<String> handleBadCredentialsException() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");

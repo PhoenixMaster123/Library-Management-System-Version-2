@@ -103,7 +103,7 @@ test.describe('recovering without a restart', () => {
   test('a signed-in session survives a backend restart', async ({ page, request }) => {
     await signInAsAdmin(page)
 
-    const token = await page.evaluate(() => localStorage.getItem('library.jwt'))
+    const token = await page.evaluate(() => sessionStorage.getItem('library.jwt'))
     expect(token).toBeTruthy()
 
     // A token minted before a restart must still verify after one. With library.jwt.secret set,

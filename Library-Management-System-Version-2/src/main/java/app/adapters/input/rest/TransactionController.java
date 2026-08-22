@@ -49,6 +49,8 @@ public class TransactionController extends PaginatedController {
 
     @PostMapping(produces = {"application/single-transaction-response+json;version=1",
             MediaType.APPLICATION_JSON_VALUE})
+
+    /** Records a loan from explicit dates. Administrators only. */
     @Operation(summary = "Create a new transaction")
     public ResponseEntity<Transaction> createNewTransaction(
             @Valid @RequestBody CreateNewTransaktion newTransaktion, BindingResult bindingResult) {
@@ -60,10 +62,7 @@ public class TransactionController extends PaginatedController {
         return ResponseEntity.ok(transaction);
     }
 
-    /**
-     * Closes a loan. Only the member holding the book may return it, or an administrator on their
-     * behalf at the desk - knowing a book id is not enough to close somebody else's loan.
-     */
+    /** Closes a loan. Only the member holding the book, or an administrator, may return it. */
     @PostMapping(value = "/returnBook/{bookId}",
             produces = {"application/transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Return a book")
@@ -117,10 +116,7 @@ public class TransactionController extends PaginatedController {
         }
     }
 
-    /**
-     * Gives the member another loan period. Only the borrower or an administrator may extend, so
-     * knowing a transaction id is not enough to move someone else's due date.
-     */
+    /** Grants one further loan period. Only the borrower or an administrator may extend. */
     @PostMapping(value = "/{transactionId}/extend", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Extend a loan by one further period")
     public ResponseEntity<Map<String, Object>> extendLoan(@PathVariable UUID transactionId,
@@ -139,10 +135,7 @@ public class TransactionController extends PaginatedController {
                 "dueDate", extended.getDueDate().toString()));
     }
 
-    /**
-     * The caller's own loans. Members read their history through this rather than by passing a
-     * customer id, so one member can never ask for another's.
-     */
+    /** The caller's own loans. Takes no customer id, so nobody can ask for another member's. */
     @GetMapping(value = "/me", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "View my borrowing history")
     public ResponseEntity<Map<String, Object>> myHistory(
@@ -167,6 +160,7 @@ public class TransactionController extends PaginatedController {
         return ResponseEntity.ok(pageBody(loans));
     }
 
+    /** True when the signed-in account holds the ADMIN role. */
     private boolean isAdmin(Authentication authentication) {
         return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
@@ -181,6 +175,8 @@ public class TransactionController extends PaginatedController {
 
     @GetMapping(value = "/history/{customerId}",
             produces = {"application/paginated-transactions-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** One page of one member's loans. Administrators only. */
     @Operation(summary = "View borrowing history for a customer (administrators)")
     public ResponseEntity<Map<String, Object>> viewBorrowingHistory(
             @PathVariable UUID customerId,
@@ -205,6 +201,8 @@ public class TransactionController extends PaginatedController {
 
     @GetMapping(value = "/{id}",
             produces = {"application/single-transaction-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** One loan by id; 404 when it matches nothing. */
     @Operation(summary = "Get a single transaction by ID")
     public ResponseEntity<Map<String, Object>> getTransactionById(@PathVariable UUID id) {
         Optional<Transaction> transactionOpt = transactionUseCase.findById(id);

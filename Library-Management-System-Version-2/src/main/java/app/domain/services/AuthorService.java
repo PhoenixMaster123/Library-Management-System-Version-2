@@ -21,6 +21,7 @@ public class AuthorService implements AuthorUseCase {
 
     private final AuthorRepositoryPort authorRepositoryPort;
 
+    /** Adds an author, rejecting a name the catalogue already holds. */
     @Override
     public Author createNewAuthor(CreateNewAuthor createNewAuthor) {
         if (authorRepositoryPort.searchAuthorByName(createNewAuthor.getName()).isPresent()) {
@@ -32,26 +33,31 @@ public class AuthorService implements AuthorUseCase {
                 .orElseThrow(() -> new IllegalStateException("Author was not properly saved"));
     }
 
+    /** Overwrites an author's details. */
     @Override
     public void updateAuthor(UUID authorId, Author author) {
         authorRepositoryPort.updateAuthor(authorId, author);
     }
 
+    /** The author with exactly this name, or empty. */
     @Override
     public Optional<Author> getAuthorByName(String name) {
         return authorRepositoryPort.searchAuthorByName(name);
     }
 
+    /** One page of authors. */
     @Override
     public Page<Author> getPaginatedAuthors(Pageable pageable) {
         return authorRepositoryPort.getPaginatedAuthors(pageable);
     }
 
+    /** One page of authors matching a free-text query. */
     @Override
     public Page<Author> searchAuthors(String query, Pageable pageable) {
         return authorRepositoryPort.searchAuthors(query, pageable);
     }
 
+    /** The author with this id, or empty. */
     @Override
     public Optional<Author> findAuthorById(UUID authorId) {
         return authorRepositoryPort.searchAuthorByID(authorId);

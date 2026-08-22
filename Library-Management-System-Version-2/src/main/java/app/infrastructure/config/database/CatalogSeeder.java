@@ -18,12 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Stocks an empty library from Open Library after start-up, off the main thread.
- *
- * <p>A library that already holds books is left alone. {@link DatabaseSeeder} is the dev-profile
- * counterpart.
- */
+/** Stocks an empty library from Open Library after start-up. A stocked one is left alone. */
 @Component
 @Profile("!dev")
 @ConditionalOnProperty(name = "library.catalog.seed.enabled", havingValue = "true", matchIfMissing = true)
@@ -44,6 +39,7 @@ public class CatalogSeeder {
     @Value("${library.catalog.seed.per-subject:40}")
     private int perSubject;
 
+    /** Fills an empty catalogue once the app is up, one search per subject, off the main thread. */
     @EventListener(ApplicationReadyEvent.class)
     @Async
     public void seedIfEmpty() {

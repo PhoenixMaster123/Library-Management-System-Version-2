@@ -13,10 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Reminds members a few days before a book is due back. Sweeping for one exact due date rather
- * than a range is what keeps a member from being reminded again every morning.
- */
+/** Reminds members before a book is due. One exact date per sweep, so nobody is reminded twice. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,6 +26,7 @@ public class LoanReminderService {
     @Value("${library.reminders.days-before:3}")
     private int daysBefore;
 
+    /** Daily sweep: notifies opted-in members whose loans fall due in daysBefore days. */
     @Scheduled(cron = "${library.reminders.cron:0 0 8 * * *}")
     public void remindMembersOfLoansDueSoon() {
         LocalDate dueDate = LocalDate.now().plusDays(daysBefore);

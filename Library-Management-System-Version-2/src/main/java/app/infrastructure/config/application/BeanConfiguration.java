@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 @Configuration
 public class BeanConfiguration {
 
+    /** Gson that serialises only @Expose fields, so the seed JSON maps exactly. */
     @Bean
     public Gson gson() {
         return new GsonBuilder()
@@ -24,10 +25,7 @@ public class BeanConfiguration {
                 .create();
     }
 
-    /**
-     * Only the seeder maps with this, turning the JSON import DTOs into create DTOs; entities are
-     * mapped by {@link app.adapters.output.mapper.EntityMapper}. STRICT refuses to guess.
-     */
+    /** Maps the seeder's JSON import DTOs to create DTOs. STRICT, so it refuses to guess. */
     @Bean
     public ModelMapper modelMapper() {
         ModelMapper modelMapper = new ModelMapper();
