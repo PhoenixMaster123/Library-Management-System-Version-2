@@ -14,11 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-/**
- * Turns JPA entities into domain models.
- *
- * <p>Associations stop one level deep, or mapping both directions would recurse forever.
- */
+/** Turns JPA entities into domain models. Associations stop one level deep to avoid recursion. */
 @UtilityClass
 public class EntityMapper {
 
@@ -94,6 +90,7 @@ public class EntityMapper {
                 entity.isPrivileges());
     }
 
+    /** Loan with its member and book, each mapped without their own histories. */
     public static Transaction toTransaction(TransactionEntity entity) {
         Transaction transaction = new Transaction(
                 entity.getTransactionId(),
@@ -106,6 +103,7 @@ public class EntityMapper {
         return transaction;
     }
 
+    /** Maps a set of entities through the given mapper. */
     private static <E, D> Set<D> mapSet(Set<E> entities, Function<E, D> mapper) {
         if (entities == null) {
             return new HashSet<>();

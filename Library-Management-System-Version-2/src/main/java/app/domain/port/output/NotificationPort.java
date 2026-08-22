@@ -7,23 +7,18 @@ import app.domain.model.ReminderSetting;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * Tells a customer something happened to their loan. Implementations must swallow delivery
- * failures: notifying is a side effect of borrowing, never a precondition of it.
- */
+/** Tells a member something happened to their loan. Implementations swallow delivery failures. */
 public interface NotificationPort {
 
+    /** Tells a member what they borrowed and when it is due back. */
     void notifyBookBorrowed(Customer customer, Book book, LocalDate dueDate);
 
+    /** Confirms to a member that a book came back. */
     void notifyBookReturned(Customer customer, Book book);
 
     /** Sent while the book is still out, a few days before it is due back. */
     void notifyDueSoon(Customer customer, Book book, LocalDate dueDate);
 
-    /**
-     * Mirrors a member's reminder choice so the notification service can address them. Best-effort
-     * like the rest of this port: {@link ReminderPreferencePort} holds the authoritative copy, so a
-     * failure here loses nothing.
-     */
+    /** Mirrors a member's reminder choice outward. Best-effort; ReminderPreferencePort is the record. */
     void saveReminderSetting(UUID customerId, ReminderSetting setting);
 }

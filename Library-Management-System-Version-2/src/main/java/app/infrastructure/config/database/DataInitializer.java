@@ -13,16 +13,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Optional;
 
-/**
- * Creates the bootstrap administrator, the one account self-registration cannot produce.
- *
- * <p>A configured {@code library.admin.password} is authoritative and is reapplied on every
- * start-up. That matters now the database is file-backed: the account outlives the process, so
- * creating it only when missing would mean setting the variable later had no effect at all.
- *
- * <p>With nothing configured a password is generated and written to the log, so there is always a
- * way in without a well-known one being baked into a public repository.
- */
+/** Creates the bootstrap administrator. A configured password wins and is reapplied every start-up. */
 @Component
 @Slf4j
 public class DataInitializer {
@@ -35,6 +26,7 @@ public class DataInitializer {
     @Value("${library.admin.password:}")
     private String adminPassword;
 
+    /** Creates the administrator at start-up, or brings the stored one back in line. */
     @Bean
     public CommandLineRunner initDatabase(UserRepository repository, PasswordEncoder passwordEncoder) {
         return args -> {
@@ -57,12 +49,7 @@ public class DataInitializer {
         };
     }
 
-    /**
-     * Brings a stored account back in line with configuration.
-     *
-     * <p>Only when a password is configured: a generated one must not be reapplied, or it would
-     * change on every restart and lock out whoever had just been told it.
-     */
+    /** Reapplies a configured password to the stored account. Generated ones are left alone. */
     private void reconcile(UserEntity admin, boolean configured,
                            UserRepository repository, PasswordEncoder passwordEncoder) {
         if (!configured) {
@@ -80,12 +67,14 @@ public class DataInitializer {
         log.info("Administrator '{}' password reset to the configured one.", adminUsername);
     }
 
+    /** A random password, used when none is configured. */
     private static String generatePassword() {
         byte[] bytes = new byte[12];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    /** Writes a generated password to the log, since it exists nowhere else. */
     private void announceGenerated(String password) {
         // Deliberately loud, and the only place this is ever readable: the alternative is either a
         // password everyone knows or no way to sign in at all.

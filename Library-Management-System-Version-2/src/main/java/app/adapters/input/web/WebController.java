@@ -12,11 +12,13 @@ import java.util.stream.Collectors;
 @Controller
 public class WebController {
 
+    /** Renders the form-login page. */
     @GetMapping("/login")
     public String login() {
         return "login";
     }
 
+    /** Renders the landing page with the signed-in name, roles, and whether they are an admin. */
     @GetMapping("/")
     public String home(Authentication authentication, Model model) {
         model.addAttribute("username", authentication.getName());

@@ -38,10 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Everything that changes the catalogue, in one place so a single rule guards it all:
- * {@code /admin/**} is administrators only. Members read and borrow through the other controllers.
- */
+/** Catalogue, author and loan administration. Every endpoint here requires the ADMIN role. */
 @RestController
 @RequestMapping("/admin")
 @Tag(name = "Admin Controller", description = "Catalogue management, administrators only")
@@ -59,10 +56,7 @@ public class AdminController extends PaginatedController {
     private final CatalogImportService catalogImportService;
     private final LoanStatisticsPort loanStatisticsPort;
 
-    /**
-     * Who has what out and when it is due. Defaults to loans still outstanding, which is the
-     * question an administrator actually asks; activeOnly=false gives the full history.
-     */
+    /** Lists who has what out and when it is due. Outstanding loans only unless activeOnly=false. */
     @GetMapping(value = "/loans", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Every loan across all members")
     public ResponseEntity<Map<String, Object>> loans(
@@ -79,13 +73,7 @@ public class AdminController extends PaginatedController {
         return ResponseEntity.ok(pageBody(loans));
     }
 
-    /**
-     * Borrowing statistics, read from Analytics-Service.
-     *
-     * <p>Answers 503 rather than zeros when they cannot be read. Analytics-Service is optional, so
-     * "it is not running" is an ordinary answer here - and one the caller must be able to tell
-     * apart from a library that has genuinely never lent a book.
-     */
+    /** Reads borrowing statistics from Analytics-Service. Answers 503, never zeros, when it is down. */
     @GetMapping(value = "/analytics", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Borrowing statistics across the library")
     public ResponseEntity<Map<String, Object>> analytics(
@@ -101,6 +89,7 @@ public class AdminController extends PaginatedController {
                         .body(Map.of("message", "Analytics is unavailable.")));
     }
 
+    /** Shapes the statistics into the response body: totals under "summary", then the ranked books. */
     private static Map<String, Object> analyticsBody(LoanStatistics statistics) {
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("booksTracked", statistics.booksTracked());
@@ -117,10 +106,7 @@ public class AdminController extends PaginatedController {
         return body;
     }
 
-    /**
-     * Prefills the add-book form from an external catalogue. Answers 404 rather than an error
-     * when nothing matches, so the librarian simply types the book in instead.
-     */
+    /** Prefills the add-book form from one ISBN. Answers 404 when the catalogue has no match. */
     @GetMapping(value = "/books/lookup", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Look a book up by ISBN in the external catalogue")
     public ResponseEntity<CreateNewBook> lookupBook(@RequestParam String isbn) {
@@ -128,6 +114,7 @@ public class AdminController extends PaginatedController {
                 .orElseThrow(() -> new BookNotFoundException("No book found for ISBN " + isbn)));
     }
 
+    /** Searches the external catalogue for candidates to stock; at most `limit` of them. */
     @GetMapping(value = "/books/search", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Search the external catalogue for books to stock")
     public ResponseEntity<List<CatalogCandidate>> searchCatalog(@RequestParam String query,
@@ -135,10 +122,7 @@ public class AdminController extends PaginatedController {
         return ResponseEntity.ok(bookCatalogPort.search(query, limit));
     }
 
-    /**
-     * Stocks the library from the external catalogue in one go. The rules live in
-     * {@link CatalogImportService}, shared with the single-book add members use.
-     */
+    /** Stocks many books at once from their ISBNs. Reports what was imported and what was skipped. */
     @PostMapping(value = "/books/import", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Import books from the external catalogue by ISBN")
     public ResponseEntity<Map<String, Object>> importBooks(@RequestBody ImportBooksRequest request) {
@@ -155,12 +139,14 @@ public class AdminController extends PaginatedController {
     public record ImportBooksRequest(List<String> isbns) {
     }
 
+    /** Adds one book and returns it with the id the catalogue assigned. */
     @PostMapping(value = "/books", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Add a book to the catalogue")
     public ResponseEntity<Book> createBook(@Valid @RequestBody CreateNewBook newBook) {
         return ResponseEntity.ok(bookUseCase.createNewBook(newBook));
     }
 
+    /** Replaces a book's details. Answers 404 when no book carries that id. */
     @PutMapping(value = "/books/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update a book")
     public ResponseEntity<Map<String, String>> updateBook(@PathVariable UUID id,
@@ -173,6 +159,7 @@ public class AdminController extends PaginatedController {
         return ResponseEntity.ok(Map.of("message", "Book updated successfully"));
     }
 
+    /** Removes a book from the catalogue. */
     @DeleteMapping(value = "/books/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Remove a book from the catalogue")
     public ResponseEntity<Map<String, String>> deleteBook(@PathVariable UUID id) {
@@ -180,12 +167,14 @@ public class AdminController extends PaginatedController {
         return ResponseEntity.ok(Map.of("message", "Book successfully deleted!"));
     }
 
+    /** Adds one author and returns it with the id the catalogue assigned. */
     @PostMapping(value = "/authors", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Add an author")
     public ResponseEntity<Author> createAuthor(@Valid @RequestBody CreateNewAuthor newAuthor) {
         return ResponseEntity.ok(authorUseCase.createNewAuthor(newAuthor));
     }
 
+    /** Replaces an author's details and answers 202. */
     @PutMapping(value = "/authors/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Update an author")
     public ResponseEntity<Map<String, String>> updateAuthor(@PathVariable UUID id,

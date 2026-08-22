@@ -14,6 +14,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UserRepository repository;
 
+    /** The account with this username; throws when there is none. */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return repository.findByUsername(username)

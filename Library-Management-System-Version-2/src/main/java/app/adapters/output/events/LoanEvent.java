@@ -3,10 +3,7 @@ package app.adapters.output.events;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * What travels on the {@code library.loans} topic. Deliberately flat and self-contained: the
- * analytics service must be able to read it without calling back into the library.
- */
+/** What travels on the library.loans topic. Flat and self-contained, so analytics needs no callback. */
 public record LoanEvent(
         String type,
         UUID customerId,

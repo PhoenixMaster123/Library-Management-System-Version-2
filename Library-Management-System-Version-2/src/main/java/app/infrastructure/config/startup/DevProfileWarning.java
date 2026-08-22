@@ -6,14 +6,13 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-/**
- * Warns about the dev profile is active.
- */
+/** Prints a warning at start-up when the dev profile is active. */
 @Component
 @Profile("dev")
 @Slf4j
 public class DevProfileWarning {
 
+    /** Logs what the dev profile loosens, once the application is ready. */
     @EventListener(ApplicationReadyEvent.class)
     public void warn() {
         log.warn("""

@@ -13,13 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
-/**
- * Due-date reminders, stored locally and mirrored to Notification-Service.
- *
- * <p>The order matters: the local row is written first and the mirror second. Notification-Service
- * being unreachable then costs the member nothing - their choice is already saved, and the next
- * change re-sends it.
- */
+/** Due-date reminders: saved locally first, then mirrored outward, so a mirror failure costs nothing. */
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -29,11 +23,13 @@ public class ReminderService implements ReminderUseCase {
     private final CustomerRepositoryPort customerRepositoryPort;
     private final NotificationPort notificationPort;
 
+    /** The member's current choice, with the address reminders would go to. */
     @Override
     public ReminderSetting settingFor(UUID customerId) {
         return new ReminderSetting(reminderPreferencePort.isEnabled(customerId), emailOf(customerId));
     }
 
+    /** Turns reminders on or off, saving locally before mirroring outward. */
     @Override
     public ReminderSetting updateSetting(UUID customerId, boolean enabled) {
         String email = emailOf(customerId);
@@ -44,6 +40,7 @@ public class ReminderService implements ReminderUseCase {
         return new ReminderSetting(enabled, email);
     }
 
+    /** The member's address; throws when there is no such member. */
     private String emailOf(UUID customerId) {
         return customerRepositoryPort.getCustomer(customerId)
                 .map(Customer::getEmail)

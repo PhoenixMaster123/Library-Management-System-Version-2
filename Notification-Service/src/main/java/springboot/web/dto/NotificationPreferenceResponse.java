@@ -10,6 +10,7 @@ import springboot.model.enums.NotificationType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/** A delivery preference as the API returns it. */
 @Getter
 @Setter
 @Builder

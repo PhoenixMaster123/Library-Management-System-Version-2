@@ -18,10 +18,7 @@ import springboot.model.enums.NotificationType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Per-user delivery settings. One row per user; {@code userId} is unique so that
- * an upsert can look the existing row up and overwrite it.
- */
+/** Per-user delivery settings, one row per user. userId is unique so an upsert can overwrite in place. */
 @Entity
 @Table(name = "notification_preferences")
 @Getter
@@ -54,6 +51,7 @@ public class NotificationPreference {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /** Stamps both timestamps on first save. */
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -63,6 +61,7 @@ public class NotificationPreference {
         updatedAt = now;
     }
 
+    /** Moves the updated timestamp on every subsequent save. */
     @PreUpdate
     void onUpdate() {
         updatedAt = LocalDateTime.now();

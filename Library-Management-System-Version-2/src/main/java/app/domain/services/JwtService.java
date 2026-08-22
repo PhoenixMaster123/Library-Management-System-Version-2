@@ -26,19 +26,12 @@ public class JwtService {
     static final String ROLE_CLAIM = "role";
     static final String DEFAULT_ROLE = "USER";
 
-    /**
-     * Minimum key length for HS256. A shorter secret is rejected by jjwt rather than silently
-     * weakening the signature.
-     */
+    /** Minimum key length for HS256; a shorter secret is rejected rather than quietly weakened. */
     private static final int MIN_SECRET_BYTES = 32;
 
     private final SecretKey key;
 
-    /**
-     * Derives the signing key from {@code library.jwt.secret}.
-     *
-     * <p>Blank means a new random key per start-up, which invalidates every token already issued.
-     */
+    /** Derives the signing key. A blank secret means a new random key per start-up. */
     public JwtService(@Value("${library.jwt.secret:}") String secret) {
         if (secret == null || secret.isBlank()) {
             this.key = Jwts.SIG.HS256.key().build();
@@ -57,10 +50,7 @@ public class JwtService {
         log.info("Signing tokens with the configured library.jwt.secret; sessions survive restarts.");
     }
 
-    /**
-     * The role travels inside the token so the filter can rebuild the authorities without a
-     * database round trip; a token therefore keeps its old role until it expires.
-     */
+    /** Mints a token carrying the role, so a token keeps that role until it expires. */
     public String getToken(String username, String role) {
         return Jwts.builder()
                 // An id, so a token can be named in the revocation list when its owner signs out.

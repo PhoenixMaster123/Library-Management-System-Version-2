@@ -4,16 +4,9 @@ import app.domain.model.LoanStatistics;
 
 import java.util.Optional;
 
-/**
- * Reads borrowing statistics from whoever is keeping them.
- *
- * <p>An empty result means they could not be read, never that there are none.
- */
+/** Reads borrowing statistics from whoever keeps them. */
 public interface LoanStatisticsPort {
 
-    /**
-     * @param limit how many books to rank
-     * @return the statistics, or empty when they could not be read - never empty to mean "zero"
-     */
+    /** The statistics with limit books ranked, or empty when unreadable - never empty to mean zero. */
     Optional<LoanStatistics> fetch(int limit);
 }

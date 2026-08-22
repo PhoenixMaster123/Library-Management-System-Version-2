@@ -23,6 +23,7 @@ import java.util.Locale;
 public class CustomerRepositoryPortAdapter implements CustomerRepositoryPort {
     private final CustomerRepository customerRepository;
 
+    /** Stores a new member and writes the assigned id back onto the model. */
     @Override
     public void saveCustomer(Customer customer) {
         CustomerEntity customerEntity = CustomerEntity.builder()
@@ -36,26 +37,32 @@ public class CustomerRepositoryPortAdapter implements CustomerRepositoryPort {
         customer.setCustomerId(savedEntity.getCustomerId());
 
     }
+
+    /** One page of stored members, without their loans. */
     @Override
     public Page<Customer> getPaginatedCustomers(Pageable pageable) {
         return customerRepository.findAll(pageable).map(EntityMapper::toCustomerSummary);
     }
 
+    /** One page of stored members matching a free-text query, matched case-insensitively. */
     @Override
     public Page<Customer> searchCustomer(String query, Pageable pageable) {
         return customerRepository.searchByQuery(query.toLowerCase(Locale.ROOT), pageable).map(EntityMapper::toCustomer);
     }
 
+    /** The stored member with this id, or empty. */
     @Override
     public Optional<Customer> getCustomer(UUID id) {
         return customerRepository.findById(id).map(EntityMapper::toCustomer);
     }
 
+    /** The stored member with exactly this name, or empty. */
     @Override
     public Optional<Customer> getCustomerByName(String name) {
         return customerRepository.findByName(name).map(EntityMapper::toCustomer);
     }
 
+    /** Writes only the borrowing privileges; throws when the member is unknown. */
     @Override
     public void updatePrivileges(Customer customer) {
         customerRepository.findById(customer.getCustomerId())
@@ -66,6 +73,8 @@ public class CustomerRepositoryPortAdapter implements CustomerRepositoryPort {
                     throw new EntityNotFoundException("Customer with ID " + customer.getCustomerId() + " not found");
                 });
     }
+
+    /** Overwrites name, email and privileges; throws when the member is unknown. */
     @Override
     public void updateCustomer(Customer customer) {
         customerRepository.findById(customer.getCustomerId())
@@ -79,6 +88,7 @@ public class CustomerRepositoryPortAdapter implements CustomerRepositoryPort {
                 });
     }
 
+    /** Removes a stored member; throws when the id is unknown. */
     @Override
     public void deleteCustomer(UUID id) {
         if (customerRepository.existsById(id)) {

@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.util.UUID;
 
+/** A request to notify one user. userId and subject are required. */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,9 +25,7 @@ public class NotificationRequest {
 
     private String body;
 
-    /**
-     * Optional override. When absent, the address from the user's stored preference is used.
-     */
+    /** Optional override; without it the address on the user's stored preference is used. */
     @Email(message = "recipientEmail must be a valid email address")
     private String recipientEmail;
 }

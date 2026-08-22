@@ -10,6 +10,7 @@ import springboot.model.enums.NotificationType;
 
 import java.util.UUID;
 
+/** A request to create or overwrite one user's delivery preference. */
 @Getter
 @Setter
 @NoArgsConstructor

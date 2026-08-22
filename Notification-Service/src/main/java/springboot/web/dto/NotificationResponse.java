@@ -11,6 +11,7 @@ import springboot.model.enums.NotificationType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/** A notification as the API returns it, delivery outcome included. */
 @Getter
 @Setter
 @Builder

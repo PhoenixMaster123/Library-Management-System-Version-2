@@ -11,11 +11,7 @@ import lombok.Setter;
 
 import java.util.UUID;
 
-/**
- * A member's due-date reminder choice, keyed by their membership.
- *
- * <p>The authoritative copy: Notification-Service is told about changes but never read back from.
- */
+/** A member's reminder choice, keyed by membership. The authoritative copy, never read back. */
 @Entity
 @Table(name = "reminder_preferences")
 @Getter

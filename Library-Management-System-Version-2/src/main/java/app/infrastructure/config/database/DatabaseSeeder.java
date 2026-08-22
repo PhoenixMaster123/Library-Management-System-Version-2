@@ -27,11 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * The dev fixture: books, customers and loans read from {@code resources/files/json}.
- *
- * <p>Dev profile only; {@link CatalogSeeder} stocks the shelves everywhere else.
- */
+/** The dev fixture: books, members and loans read from resources/files/json. Dev profile only. */
 @Component
 @Profile("dev")
 @RequiredArgsConstructor
@@ -45,6 +41,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final Gson gson;
     private final ModelMapper mapper;
 
+    /** Loads the fixture at start-up, unless the library already holds books. */
     @Override
     public void run(String... args){
         List<UUID> customerIds;
@@ -72,6 +69,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
+    /** Adds the fixture's books and returns their ids. */
     private List<UUID> importBooksFromJson(){
         List<UUID> bookIds = new ArrayList<>();
         try {
@@ -99,6 +97,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         return bookIds;
     }
 
+    /** Adds the fixture's members and returns their ids. */
     private List<UUID> importCustomersFromJson() {
         List<UUID> customerIds = new ArrayList<>();
         try {
@@ -126,6 +125,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         return customerIds;
     }
 
+    /** Replays the fixture's borrows and returns; false when nothing could be read. */
     private boolean importTransactionsFromJson() {
         try {
             String json = readClasspathJson("files/json/transactions.json");
@@ -174,11 +174,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         }
     }
 
-    /**
-     * Reads a seed file through the classpath stream rather than as a File. ClassPathResource
-     * .getFile() only works while the resources sit loose on disk: from the packaged jar it
-     * throws, which silently left the whole catalogue unseeded.
-     */
+    /** Reads a seed file as a classpath stream, which unlike getFile() also works inside the jar. */
     private String readClasspathJson(String location) throws IOException {
         try (InputStream stream = new ClassPathResource(location).getInputStream()) {
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);

@@ -8,13 +8,11 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
-/**
- * The catalogue's HTTP client. Kept out of the adapter so a test can hand it a client bound to
- * MockRestServiceServer instead of one wired to the real Open Library.
- */
+/** The catalogue's HTTP client, kept out of the adapter so a test can supply its own. */
 @Configuration
 public class CatalogClientConfig {
 
+    /** The client the catalogue adapter uses, with timeouts suited to a busy public catalogue. */
     @Bean
     public RestClient catalogRestClient(RestClient.Builder builder,
                                         @Value("${catalog.open-library.url:https://openlibrary.org}") String baseUrl) {

@@ -18,11 +18,7 @@ import springboot.model.enums.NotificationType;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * A single notification that was requested for a user, together with the outcome
- * of its delivery attempt. Rows are kept even when delivery fails, so the history
- * endpoint can show what was tried.
- */
+/** One notification and how its delivery went. Kept even when delivery fails, so history shows attempts. */
 @Entity
 @Table(name = "notification")
 @Getter
@@ -62,6 +58,7 @@ public class Notification {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    /** Stamps the creation time on first save, if nothing set one already. */
     @PrePersist
     void onCreate() {
         if (createdAt == null) {

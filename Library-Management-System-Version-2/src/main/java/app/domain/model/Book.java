@@ -22,17 +22,15 @@ public class Book {
     private LocalDate createdAt;
     private Set<Author> authors = new HashSet<>();
 
-    /**
-     * Free text shown on the book's detail panel, usually filled in from the catalogue lookup.
-     * Set separately rather than through a constructor, which is why there is no @AllArgsConstructor
-     * here: every existing call site builds a book without one.
-     */
+    /** The blurb on the detail panel. Set separately, so no constructor takes it. */
     private String description;
 
+    /** A new book with no id yet; storage assigns one. */
     public Book(String title, String isbn, int publicationYear, boolean isAvailable, LocalDate createdAt) {
         this(null, title, isbn, publicationYear, isAvailable, createdAt);
     }
 
+    /** A book already known by id, with no authors attached. */
     public Book(UUID bookId, String title, String isbn, int publicationYear, boolean isAvailable, LocalDate createdAt) {
         this.bookId = bookId;
         this.title = title;
@@ -42,6 +40,7 @@ public class Book {
         this.createdAt = createdAt;
     }
 
+    /** A book already known by id, together with its authors. */
     public Book(UUID bookId, String title, String isbn, int publicationYear, boolean isAvailable,
                 LocalDate createdAt, Set<Author> authors) {
         this(bookId, title, isbn, publicationYear, isAvailable, createdAt);

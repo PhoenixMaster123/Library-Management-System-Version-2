@@ -10,6 +10,7 @@ import springboot.web.dto.NotificationResponse;
 @UtilityClass
 public class DtoMapper {
 
+    /** Preference entity to its response DTO; null in, null out. */
     public static NotificationPreferenceResponse fromNotificationPreference(
             NotificationPreference notificationPreference) {
         if (notificationPreference == null) {
@@ -26,6 +27,7 @@ public class DtoMapper {
                 .build();
     }
 
+    /** Notification entity to its response DTO; null in, null out. */
     public static NotificationResponse fromNotification(Notification notification) {
         if (notification == null) {
             return null;

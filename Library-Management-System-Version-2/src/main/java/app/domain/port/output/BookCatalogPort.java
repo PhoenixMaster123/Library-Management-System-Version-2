@@ -7,21 +7,13 @@ import app.domain.model.CatalogPage;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Looks a book up in an external catalogue by ISBN so a librarian does not have to type the
- * title, authors, year and blurb by hand.
- *
- * <p>Returns empty rather than throwing when the book is unknown or the catalogue is
- * unreachable: a lookup is a convenience, never a precondition for adding a book.
- */
+/** An external catalogue to prefill book details from. Never throws: a lookup is a convenience. */
 public interface BookCatalogPort {
 
+    /** The catalogue's entry for one ISBN, or empty when unknown or unreachable. */
     Optional<CreateNewBook> findByIsbn(String isbn);
 
-    /**
-     * One page of free-text search over the external catalogue. Candidates carry no description;
-     * that is fetched per book on import.
-     */
+    /** One page of free-text search. Candidates carry no description; that is fetched on import. */
     CatalogPage search(String query, int page, int size);
 
     /** The first page only, for callers that just want a handful of candidates. */

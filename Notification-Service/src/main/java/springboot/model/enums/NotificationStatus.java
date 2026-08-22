@@ -1,9 +1,6 @@
 package springboot.model.enums;
 
-/**
- * Delivery outcome of a single notification.
- * A notification is always persisted; the status records what happened to the send attempt.
- */
+/** Delivery outcome of one notification. The row is always kept; this records what the send did. */
 public enum NotificationStatus {
     /** Persisted, but not dispatched yet (e.g. mail delivery is disabled). */
     PENDING,

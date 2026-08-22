@@ -34,11 +34,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 
-/**
- * Two filter chains: a stateless bearer-token one for the REST API, and a session-backed form
- * login for the server-rendered pages. Keeping them apart is what lets the API stay stateless
- * while form login, which needs a session, still works.
- */
+/** Two filter chains: a stateless bearer-token one for the API, a session-backed one for the pages. */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -58,12 +54,7 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthenticationFilter authenticationFilter;
 
-    /**
-     * Cross-origin rules for the API, from {@code library.cors.allowed-origins}.
-     *
-     * <p>Empty by default, which allows nothing: locally the frontend is proxied and so is already
-     * same-origin. A separately hosted frontend has to be named here or the browser blocks it.
-     */
+    /** Cross-origin rules for the API. Empty by default, which allows nothing. */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -93,14 +84,7 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Response headers that limit what a browser will do with our pages.
-     *
-     * <p>The token lives in localStorage, so any script that runs on the page can read it. The
-     * content security policy is what makes that unlikely: injected script has nowhere to load from
-     * and no inline execution. HSTS matters once a proxy terminates TLS - it stops the next visit
-     * being made over plain HTTP in the first place.
-     */
+    /** Response headers that limit what a browser will do with our pages: CSP, HSTS and friends. */
     private static void hardenHeaders(HeadersConfigurer<HttpSecurity> headers) {
         headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(String.join("; ",
@@ -119,6 +103,7 @@ public class SecurityConfig {
                         .maxAgeInSeconds(31536000));
     }
 
+    /** The stateless chain for /api and the other JSON endpoints. */
     @Bean
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -158,6 +143,7 @@ public class SecurityConfig {
                 .build();
     }
 
+    /** The session-backed form-login chain for the server-rendered pages. */
     @Bean
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -201,6 +187,7 @@ public class SecurityConfig {
                 .build();
     }
 
+    /** Answers sign-out with JSON instead of a redirect. */
     private LogoutSuccessHandler jsonLogoutSuccessHandler() {
         return (request, response, authentication) -> {
             response.setStatus(HttpStatus.OK.value());
@@ -209,6 +196,7 @@ public class SecurityConfig {
         };
     }
 
+    /** Answers a forbidden request with JSON instead of a redirect. */
     private AccessDeniedHandler jsonAccessDeniedHandler() {
         return (request, response, exception) -> {
             response.setStatus(HttpStatus.FORBIDDEN.value());
@@ -217,11 +205,13 @@ public class SecurityConfig {
         };
     }
 
+    /** The hash stored passwords are checked against. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /** Checks a username and password against the stored accounts. */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
@@ -229,6 +219,7 @@ public class SecurityConfig {
         return provider;
     }
 
+    /** The manager form login and the API both authenticate through. */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();

@@ -22,6 +22,7 @@ import springboot.web.mapper.DtoMapper;
 import java.util.List;
 import java.util.UUID;
 
+/** The service's HTTP surface. Unauthenticated: it trusts the userId it is given. */
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
+    /** Creates or overwrites the caller's delivery preference; answers 201. */
     @PostMapping("/preferences")
     public ResponseEntity<NotificationPreferenceResponse> upsertNotificationPreference(
             @Valid @RequestBody UpsertNotificationPreference upsertNotificationPreference) {
@@ -44,6 +46,7 @@ public class NotificationController {
                 .body(responseDto);
     }
 
+    /** The stored preference for one user; 404 when there is none. */
     @GetMapping("/preferences")
     public ResponseEntity<NotificationPreferenceResponse> getUserNotificationPreference(
             @RequestParam(name = "userId") UUID userId) {
@@ -58,6 +61,7 @@ public class NotificationController {
                 .body(responseDto);
     }
 
+    /** Raises a notification and reports how delivery went; answers 201. */
     @PostMapping
     public ResponseEntity<NotificationResponse> sendNotification(
             @Valid @RequestBody NotificationRequest notificationRequest) {
@@ -71,6 +75,7 @@ public class NotificationController {
                 .body(response);
     }
 
+    /** Everything raised for one user, newest first. */
     @GetMapping
     public ResponseEntity<List<NotificationResponse>> getNotificationHistory(
             @RequestParam(name = "userId") UUID userId) {
@@ -85,6 +90,7 @@ public class NotificationController {
                 .body(notificationHistory);
     }
 
+    /** Liveness probe kept for manual checks; returns a fixed string. */
     @GetMapping("/test")
     public ResponseEntity<String> getHelloWorld() {
         return ResponseEntity

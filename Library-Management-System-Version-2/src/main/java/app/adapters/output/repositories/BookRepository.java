@@ -15,14 +15,19 @@ import java.util.UUID;
 /** Spring Data access to books. */
 @Repository
 public interface BookRepository extends JpaRepository<BookEntity, UUID> {
+    /** The book with exactly this title, its authors fetched with it. */
     @Query("SELECT b FROM BookEntity b LEFT JOIN FETCH b.authors WHERE b.title = :title")
     Optional<BookEntity> findBookByTitle(@Param("title") String title);
 
+    /** Books by this author, narrowed to those on the shelf or those out. */
     @Query("SELECT b FROM BookEntity b JOIN b.authors a WHERE a.name = :author AND b.availability = :isAvailable")
     List<BookEntity> findBooksByAuthor(@Param("author") String author, @Param("isAvailable") boolean isAvailable);
 
+    /** The book with this ISBN, or empty. */
     @Query("SELECT b FROM BookEntity b WHERE b.isbn = :isbn")
     Optional<BookEntity> findBooksByIsbn(@Param("isbn") String isbn);
+
+    /** The book with this id, or empty. */
     Optional<BookEntity> findBookByBookId(@Param("id") UUID id);
 
     @Query("SELECT b FROM BookEntity b LEFT JOIN b.authors a " +
@@ -30,5 +35,7 @@ public interface BookRepository extends JpaRepository<BookEntity, UUID> {
             "OR LOWER(b.isbn) LIKE LOWER(CONCAT('%', :query, '%')) " +
             "OR CAST(b.publicationYear AS string) LIKE CONCAT('%', :query, '%') " +
             "OR LOWER(a.name) LIKE LOWER(CONCAT('%', :query, '%'))")
+
+    /** One page of books matching on title, ISBN, year or author name. */
     Page<BookEntity> findBooksByQuery(@Param("query") String query, Pageable pageable);
 }

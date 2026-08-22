@@ -19,10 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Authenticates API calls that carry a bearer token. Requests that were already
- * authenticated by the form-login session are left untouched.
- */
+/** Authenticates calls carrying a bearer token. Form-login sessions are left untouched. */
 @Component
 @RequiredArgsConstructor
 public class AuthenticationFilter extends OncePerRequestFilter {
@@ -30,6 +27,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final TokenRevocationService revocationService;
 
+    /** Reads the token, refuses revoked ones, and sets the authentication for the request. */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,

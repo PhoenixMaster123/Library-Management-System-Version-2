@@ -45,6 +45,7 @@ public class TransactionService implements TransactionUseCase {
     private final NotificationPort notificationPort;
     private final LoanEventPort loanEventPort;
 
+    /** Records a loan from explicit dates, checking they are ordered and in the future. */
     @Override
     public Transaction createNewTransaction(CreateNewTransaktion newTransaktion) {
 
@@ -72,6 +73,7 @@ public class TransactionService implements TransactionUseCase {
         return transaction;
     }
 
+    /** Closes the book's open loan, puts it back on the shelf and announces the return. */
     @Override
     public String returnBook(UUID bookId) {
         List<Transaction> transactions = transactionRepositoryPort
@@ -100,6 +102,7 @@ public class TransactionService implements TransactionUseCase {
         return transaction.getTransactionId().toString();
     }
 
+    /** Lends a book, refusing when it is out, the member lacks privileges, or the limit is reached. */
     @Override
     public Transaction borrowBook(UUID customerId, UUID bookId) {
         // Named exceptions rather than a bare RuntimeException: the web layer has to tell a
@@ -163,31 +166,37 @@ public class TransactionService implements TransactionUseCase {
         return transaction;
     }
 
+    /** One page of one member's loans, past and present. */
     @Override
     public Page<Transaction> viewBorrowingHistory(UUID customerId, Pageable pageable) {
         return transactionRepositoryPort.viewBorrowingHistory(customerId, pageable);
     }
 
+    /** One page of every loan in the library. */
     @Override
     public Page<Transaction> viewAllLoans(Pageable pageable) {
         return transactionRepositoryPort.findAllTransactions(pageable);
     }
 
+    /** One page of the loans still outstanding. */
     @Override
     public Page<Transaction> viewActiveLoans(Pageable pageable) {
         return transactionRepositoryPort.findActiveLoans(pageable);
     }
 
+    /** The loan with this id, or empty. */
     @Override
     public Optional<Transaction> findById(UUID transactionId) {
         return transactionRepositoryPort.findTransactionById(transactionId);
     }
 
+    /** The loan a book is out on, or empty when it is on the shelf. */
     @Override
     public Optional<Transaction> findActiveLoanForBook(UUID bookId) {
         return transactionRepositoryPort.findActiveLoanForBook(bookId);
     }
 
+    /** Records a borrow dated in the past, for seeding and imports. Skips the loan limit. */
     @Override
     public void borrowBookWithDates(UUID customerId, UUID bookId, LocalDate borrowDate) {
         Book book = bookRepositoryPort.searchBookById(bookId)
@@ -212,6 +221,7 @@ public class TransactionService implements TransactionUseCase {
         transactionRepositoryPort.saveTransaction(transaction);
     }
 
+    /** Closes a book's open loans on a past date, for seeding and imports. */
     @Override
     public void returnBookWithDates(UUID bookId, LocalDate returnDate) {
         List<Transaction> transactions = transactionRepositoryPort

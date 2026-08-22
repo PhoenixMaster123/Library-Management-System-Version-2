@@ -17,9 +17,11 @@ import java.util.Arrays;
 @Slf4j
 public class LoggingAspect {
 
+    /** Matches every method on a @RestController. */
     @Pointcut("within(@org.springframework.web.bind.annotation.RestController *)")
     public void controllerMethods() {}
 
+    /** Logs the call and its arguments before it runs. */
     @Before("controllerMethods()")
     public void logBefore(JoinPoint joinPoint) {
         log.info("➡️ Entering: {}.{}() with args: {}",
@@ -28,6 +30,7 @@ public class LoggingAspect {
                 Arrays.toString(joinPoint.getArgs()));
     }
 
+    /** Logs the return value once the call has succeeded. */
     @AfterReturning(pointcut = "controllerMethods()", returning = "result")
     public void logAfterReturning(JoinPoint joinPoint, Object result) {
         log.info("✅ Exiting: {}.{}() with result: {}",
@@ -36,6 +39,7 @@ public class LoggingAspect {
                 result);
     }
 
+    /** Logs the exception and its stack trace when the call fails. */
     @AfterThrowing(pointcut = "controllerMethods()", throwing = "ex")
     public void logAfterThrowing(JoinPoint joinPoint, Throwable ex) {
         log.error("❌ Exception in {}.{}() with cause = {}",

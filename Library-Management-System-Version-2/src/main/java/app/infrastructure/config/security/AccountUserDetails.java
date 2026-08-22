@@ -10,11 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * The signed-in account as Spring Security sees it. A real UserDetails rather than a built
- * {@code User}, so the principal keeps hold of the library membership behind the account -
- * which is what borrowing acts on.
- */
+/** The signed-in account as Spring Security sees it, keeping hold of the membership behind it. */
 @Getter
 public class AccountUserDetails implements UserDetails {
 
@@ -24,6 +20,7 @@ public class AccountUserDetails implements UserDetails {
     /** Null for staff accounts, which hold no membership. */
     private final UUID customerId;
 
+    /** Copies what Spring Security needs, plus the membership id. */
     public AccountUserDetails(UserEntity user) {
         this.username = user.getUsername();
         this.password = user.getPassword();
@@ -37,21 +34,25 @@ public class AccountUserDetails implements UserDetails {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
+    /** Accounts never expire here. */
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    /** Lockout is handled by LoginAttemptService, not by the account record. */
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
+    /** Passwords never expire here. */
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    /** Every stored account is enabled. */
     @Override
     public boolean isEnabled() {
         return true;

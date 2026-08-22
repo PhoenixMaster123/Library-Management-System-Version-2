@@ -12,6 +12,7 @@ import springboot.analytics.repository.BookStatRepository;
 import java.time.Instant;
 import java.util.List;
 
+/** Keeps the per-book tallies up to date from the event stream, and reports them. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -20,10 +21,7 @@ public class LoanStatisticsService {
     private final BookStatRepository repository;
     private final StreamHealth streamHealth;
 
-    /**
-     * Folds one event into the running totals. Unknown event types are ignored rather than
-     * rejected, so the library can add new ones without this service having to ship first.
-     */
+    /** Folds one event into the running totals. Unknown event types are ignored, not rejected. */
     @Transactional
     public void record(LoanEvent event) {
         if (event == null || event.bookId() == null) {
@@ -50,11 +48,13 @@ public class LoanStatisticsService {
         repository.save(stat);
     }
 
+    /** The most borrowed books, at most limit of them. */
     @Transactional(readOnly = true)
     public List<BookStat> mostBorrowed(int limit) {
         return repository.findMostBorrowed().stream().limit(limit).toList();
     }
 
+    /** Library-wide totals, plus whether the event stream is live. */
     @Transactional(readOnly = true)
     public Summary summary() {
         long borrows = repository.totalBorrows();
@@ -68,13 +68,7 @@ public class LoanStatisticsService {
                 streamHealth.lastEventAt());
     }
 
-    /**
-     * The totals, plus enough about the event stream to interpret them.
-     *
-     * <p>{@code streamConnected} is what stops a caller reading an empty projection as "nothing has
-     * ever been borrowed". With no broker reachable the totals are not a small number - they are
-     * no number at all, and the caller has to be able to tell the difference.
-     */
+    /** The totals, plus enough about the stream to tell "nothing borrowed" from "no broker". */
     public record Summary(
             long booksTracked,
             long totalBorrows,

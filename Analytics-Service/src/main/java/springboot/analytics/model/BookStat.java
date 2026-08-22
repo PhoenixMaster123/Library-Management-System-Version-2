@@ -36,6 +36,7 @@ public class BookStat {
     @Column(name = "last_activity")
     private Instant lastActivity;
 
+    /** Starts a fresh tally for a book the service has not seen before. */
     public BookStat(UUID bookId, String title, String isbn) {
         this.bookId = bookId;
         this.title = title;

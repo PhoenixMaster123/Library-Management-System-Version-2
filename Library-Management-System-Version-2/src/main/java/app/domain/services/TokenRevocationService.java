@@ -7,24 +7,14 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Remembers tokens that have been signed out, so a bearer token stops working the moment its owner
- * says so rather than when it happens to expire.
- *
- * <p>A signed JWT is valid until its expiry by design: nothing about it is looked up, which is what
- * makes it cheap. The cost is that signing out can only ever be a client-side gesture unless the
- * server keeps a list like this one, so a copied token would keep working for the rest of the day.
- *
- * <p>Entries are dropped once the token would have expired anyway, so the list stays the size of
- * however many people signed out recently. It is in memory: a restart forgets it, but a restart
- * also mints a new signing key unless one is configured, which invalidates everything regardless.
- */
+/** Remembers signed-out tokens, so a bearer token stops working at sign-out rather than at expiry. */
 @Service
 public class TokenRevocationService {
 
     /** Token id to the moment it expires, after which remembering it serves no purpose. */
     private final Map<String, Instant> revoked = new ConcurrentHashMap<>();
 
+    /** Marks a token signed out until the moment it would have expired anyway. */
     public void revoke(Claims claims) {
         if (claims == null) {
             return;
@@ -37,6 +27,7 @@ public class TokenRevocationService {
         revoked.put(id, claims.getExpiration() == null ? Instant.now() : claims.getExpiration().toInstant());
     }
 
+    /** True while the token is on the list; drops the entry once it would have expired. */
     public boolean isRevoked(Claims claims) {
         if (claims == null || claims.getId() == null) {
             return false;
@@ -52,6 +43,7 @@ public class TokenRevocationService {
         return true;
     }
 
+    /** Drops entries for tokens that have expired, so the list stays small. */
     private void purgeExpired() {
         Instant now = Instant.now();
         revoked.entrySet().removeIf(entry -> now.isAfter(entry.getValue()));

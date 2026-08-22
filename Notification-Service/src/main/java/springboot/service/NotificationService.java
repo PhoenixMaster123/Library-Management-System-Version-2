@@ -21,6 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
+/** Records notifications, delivers them by mail when enabled, and keeps the per-user settings. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -30,16 +31,14 @@ public class NotificationService {
     private final NotificationPreferenceRepository preferenceRepository;
     private final JavaMailSender mailSender;
 
-    /**
-     * Delivery is opt-in so the service is usable without SMTP credentials: notifications
-     * are still persisted, but marked PENDING instead of failing every request.
-     */
+    /** Opt-in, so the service runs without SMTP credentials: sends become PENDING rather than failures. */
     @Value("${notification.mail.enabled:false}")
     private boolean mailEnabled;
 
     @Value("${spring.mail.username:}")
     private String fromAddress;
 
+    /** Creates or overwrites a user's delivery preference; defaults the channel to EMAIL. */
     @Transactional
     public NotificationPreference upsertPreference(UpsertNotificationPreference dto) {
         NotificationPreference preference = preferenceRepository.findByUserId(dto.getUserId())
@@ -53,6 +52,7 @@ public class NotificationService {
         return preferenceRepository.save(preference);
     }
 
+    /** The user's preference, or NoSuchElementException when they have none. */
     @Transactional(readOnly = true)
     public NotificationPreference getPreferenceByUserId(UUID userId) {
         return preferenceRepository.findByUserId(userId)
@@ -60,10 +60,7 @@ public class NotificationService {
                         "No notification preference found for user " + userId));
     }
 
-    /**
-     * Records the notification, then attempts delivery. The row is persisted whatever the
-     * delivery outcome, so a broken mailbox never loses the audit trail.
-     */
+    /** Records the notification, then tries to deliver it. The row is saved whatever the outcome. */
     @Transactional
     public Notification sendNotification(NotificationRequest request) {
         Optional<NotificationPreference> preference = preferenceRepository.findByUserId(request.getUserId());
@@ -84,15 +81,13 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    /** Everything raised for a user, newest first. */
     @Transactional(readOnly = true)
     public List<Notification> getNotificationHistory(UUID userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    /**
-     * Decides whether to dispatch and records the result on the notification.
-     * Never throws: a delivery failure is data, not an error the caller must handle.
-     */
+    /** Decides whether to send and writes the outcome onto the notification. Never throws. */
     private void applyDelivery(Notification notification, NotificationPreference preference) {
         if (preference != null && !preference.isNotificationEnabled()) {
             notification.setStatus(NotificationStatus.PENDING);
@@ -131,6 +126,7 @@ public class NotificationService {
         }
     }
 
+    /** Clips a failure reason to the 1000 characters the column holds. */
     private String truncate(String reason) {
         if (reason == null) {
             return "Unknown error";

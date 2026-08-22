@@ -27,6 +27,7 @@ public class BookService implements BookUseCase {
     private final BookRepositoryPort bookRepositoryPort;
     private final AuthorUseCase authorUseCase;
 
+    /** Adds a book, rejecting a duplicate title or ISBN and reusing authors already on file. */
     @Override
     public Book createNewBook(CreateNewBook bookToCreate) {
         if (bookRepositoryPort.searchBookByTitle(bookToCreate.getTitle()).isPresent()) {
@@ -55,41 +56,49 @@ public class BookService implements BookUseCase {
         return book;
     }
 
+    /** One page of the catalogue. */
     @Override
     public Page<Book> getPaginatedBooks(Pageable pageable) {
         return bookRepositoryPort.getPaginatedBooks(pageable);
     }
 
+    /** The book with exactly this title, or empty. */
     @Override
     public Optional<Book> searchBookByTitle(String title) {
         return bookRepositoryPort.searchBookByTitle(title);
     }
 
+    /** A book by this author, narrowed by availability. */
     @Override
     public Optional<Book> searchBookByAuthors(String author, boolean isAvailable) {
         return bookRepositoryPort.searchBookByAuthors(author, isAvailable);
     }
 
+    /** The book with this ISBN, or empty. */
     @Override
     public Optional<Book> searchByIsbn(String isbn) {
         return bookRepositoryPort.searchByIsbn(isbn);
     }
 
+    /** The book with this id, or empty. */
     @Override
     public Optional<Book> searchById(UUID id) {
         return bookRepositoryPort.searchBookById(id);
     }
 
+    /** One page of books matching a free-text query. */
     @Override
     public Page<Book> searchBooks(String query, Pageable pageable) {
         return bookRepositoryPort.searchBooks(query, pageable);
     }
 
+    /** Overwrites a book's details. */
     @Override
     public void updateBook(UUID bookID, Book book) {
         bookRepositoryPort.updateBook(bookID, book);
     }
 
+    /** Removes a book from the catalogue. */
     @Override
     public void deleteBook(UUID bookId) {
         bookRepositoryPort.deleteBook(bookId);
