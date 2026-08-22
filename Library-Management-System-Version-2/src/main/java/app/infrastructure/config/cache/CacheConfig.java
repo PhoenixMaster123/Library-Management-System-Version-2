@@ -26,21 +26,25 @@ public class CacheConfig implements CachingConfigurer {
     @Override
     public CacheErrorHandler errorHandler() {
         return new CacheErrorHandler() {
+            /** Serves the call uncached when the cache cannot be read. */
             @Override
             public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
                 log.warn("Cache '{}' unreadable, serving uncached: {}", cache.getName(), exception.getMessage());
             }
 
+            /** Carries on when a result cannot be written to the cache. */
             @Override
             public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
                 log.warn("Cache '{}' unwritable: {}", cache.getName(), exception.getMessage());
             }
 
+            /** Carries on when an entry cannot be evicted. */
             @Override
             public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
                 log.warn("Cache '{}' eviction failed: {}", cache.getName(), exception.getMessage());
             }
 
+            /** Carries on when the cache cannot be cleared. */
             @Override
             public void handleCacheClearError(RuntimeException exception, Cache cache) {
                 log.warn("Cache '{}' clear failed: {}", cache.getName(), exception.getMessage());

@@ -47,6 +47,7 @@ public class LoginController {
     private final LoginAttemptService loginAttempts;
     private final TokenRevocationService revocationService;
 
+    /** Signs in and returns a bearer token for the API. */
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> getToken(@RequestBody AccountCredentials credentials) {
         String username = credentials.getUsername();
@@ -85,13 +86,7 @@ public class LoginController {
                 .body(body);
     }
 
-    /**
-     * Signs the caller out and refuses their token from now on.
-     *
-     * <p>Spring's own logout handler clears the session, which a stateless token never had. Without
-     * this the token in the browser stays valid until it expires, so "sign out" would only mean the
-     * client agreeing to forget it.
-     */
+    /** Signs the caller out and refuses their token from now on, rather than trusting them to forget it. */
     @PostMapping("/revoke")
     public ResponseEntity<Map<String, String>> revoke(HttpServletRequest request) {
         revocationService.revoke(jwtService.getClaims(request));
@@ -104,10 +99,7 @@ public class LoginController {
         return ResponseEntity.ok(identity(auth));
     }
 
-    /**
-     * The current password is required so that a stolen token cannot be used to lock the owner
-     * out of their own account.
-     */
+    /** Changes the password. The current one is required, so a stolen token cannot lock the owner out. */
     @PostMapping("/change-password")
     public ResponseEntity<Map<String, String>> changePassword(@Valid @RequestBody ChangePasswordRequest request,
                                                               BindingResult bindingResult,
@@ -138,10 +130,7 @@ public class LoginController {
         return ResponseEntity.ok(Map.of("message", "Password changed successfully."));
     }
 
-    /**
-     * The role decides which screens the client offers; the customerId is what it borrows with,
-     * and is absent for staff accounts that have no library membership.
-     */
+    /** Username, role and customerId; the last is absent for staff accounts with no membership. */
     private Map<String, Object> identity(Authentication auth) {
         Map<String, Object> identity = new LinkedHashMap<>();
         identity.put("username", auth.getName());
@@ -152,6 +141,7 @@ public class LoginController {
         return identity;
     }
 
+    /** The account's first authority, with the ROLE_ prefix stripped. */
     private String roleOf(Authentication auth) {
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

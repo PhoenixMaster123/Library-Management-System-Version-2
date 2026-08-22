@@ -36,6 +36,8 @@ public class AuthorController extends PaginatedController {
 
     @GetMapping(value = "/{id}",
             produces = {"application/single-author-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** One author with their books; 404 when the id matches nothing. */
     @Operation(summary = "Get author by ID")
     public ResponseEntity<Map<String, Object>> getAuthorById(@PathVariable UUID id) {
         Optional<Author> authorOpt = authorUseCase.findAuthorById(id);
@@ -59,6 +61,8 @@ public class AuthorController extends PaginatedController {
 
     @GetMapping(value = "/search",
             produces = {"application/paginated-authors-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** Finds authors by name, id or free text, as one page of results. */
     @Operation(summary = "Search for an author by name or ID or query")
     public ResponseEntity<Map<String, Object>> getAuthor(
             @RequestParam(required = false) UUID id,
@@ -102,6 +106,8 @@ public class AuthorController extends PaginatedController {
 
     @GetMapping(value = "/paginated",
             produces = {"application/paginated-authors-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
+
+    /** One page of authors. */
     @Operation(summary = "Get all authors")
     public ResponseEntity<Map<String, Object>> getAllAuthors(
             @RequestParam(defaultValue = "0") int page,

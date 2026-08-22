@@ -11,20 +11,15 @@ import java.util.function.IntFunction;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
-/**
- * Shared plumbing for the paginated endpoints: the Link headers and the response body were
- * written out at every one of them and had already drifted apart.
- */
+/** Shared plumbing for the paginated endpoints: the Link headers and the response body. */
 public abstract class PaginatedController {
 
+    /** A page request sorted ascending by the named field. */
     protected PageRequest pageRequest(int page, int size, String sortBy) {
         return PageRequest.of(page, size, Sort.Direction.ASC, sortBy);
     }
 
-    /**
-     * @param pageCall given a page number, the {@code methodOn(...)} call serving that page,
-     *                 so the URLs stay tied to the real mapping instead of a hand-built string
-     */
+    /** self, prev and next Link headers, built from the real mapping rather than hand-made URLs. */
     protected HttpHeaders pageLinks(Page<?> page, IntFunction<Object> pageCall) {
         HttpHeaders headers = new HttpHeaders();
         addLink(headers, "self", pageCall.apply(page.getNumber()));
@@ -37,6 +32,7 @@ public abstract class PaginatedController {
         return headers;
     }
 
+    /** Adds one Link header pointing at the given page. */
     private void addLink(HttpHeaders headers, String rel, Object methodOnInvocation) {
         headers.add(rel, "<" + linkTo(methodOnInvocation).toUri() + ">; rel=\"" + rel + "\"");
     }

@@ -20,12 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Lets a member switch due-date reminders on and off.
- *
- * <p>There is deliberately no way to say where they go: reminders are sent to the address on the
- * membership, so the endpoint reports it but never accepts one.
- */
+/** Switches due-date reminders on and off. The address always comes from the membership. */
 @RestController
 @RequestMapping("/api/reminders")
 @Tag(name = "Reminder Controller", description = "Due-date reminder preferences")
@@ -39,6 +34,7 @@ public class ReminderController {
     public record ReminderUpdateRequest(boolean enabled) {
     }
 
+    /** The member's reminder setting; supported=false for an account with no membership. */
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "My reminder settings")
     public ResponseEntity<Map<String, Object>> mySetting(Authentication authentication) {
@@ -55,6 +51,7 @@ public class ReminderController {
                 "email", setting.email() == null ? "" : setting.email()));
     }
 
+    /** Turns reminders on or off; 400 for an account with no membership behind it. */
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Turn due-date reminders on or off")
     public ResponseEntity<Map<String, Object>> updateSetting(@RequestBody ReminderUpdateRequest request,

@@ -55,11 +55,7 @@ public class BookController extends PaginatedController {
     private final CatalogEnrichmentService catalogEnrichmentService;
     private final CurrentAccount currentAccount;
 
-    /**
-     * One page of the shelves. Passing {@code query} narrows it to matching books rather than
-     * every book, so browsing and searching share this one paged shape instead of the caller
-     * having to switch endpoints - and page numbers - halfway through.
-     */
+    /** One page of the shelves, narrowed to matching books when query is given. */
     @GetMapping(value = "/paginated",
             produces = {"application/paginated-books-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Get all books, or those matching a query")
@@ -93,11 +89,7 @@ public class BookController extends PaginatedController {
         return ResponseEntity.ok().headers(headers).body(pageBody(books));
     }
 
-    /**
-     * The full record behind a row. {@code borrowedByMe} is what lets the reader be offered
-     * Return rather than Borrow - the availability flag alone cannot tell "you have this out"
-     * from "somebody else does".
-     */
+    /** The full record for one book, including whether the caller is the one holding it. */
     @GetMapping(value = "/{id}",
             produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Get a book by id")
@@ -137,11 +129,7 @@ public class BookController extends PaginatedController {
                 .body(body);
     }
 
-    /**
-     * Searches the external catalogue rather than the shelves, so a member can find a book the
-     * library does not hold yet. Each hit says whether it is already stocked, which is what turns
-     * "Add to library" into "Already on the shelves" without a second round trip.
-     */
+    /** Searches the external catalogue, not the shelves. Each hit says whether it is already stocked. */
     @GetMapping(value = "/discover", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Search the external catalogue for books the library could stock")
     public ResponseEntity<Map<String, Object>> discover(
@@ -162,13 +150,7 @@ public class BookController extends PaginatedController {
                 "totalPages", size <= 0 ? 0 : (found.totalItems() + size - 1) / size));
     }
 
-    /**
-     * Any member may stock a book they want to read; the catalogue is the library's, not the desk's.
-     *
-     * <p>The whole search hit is sent back, not just its ISBN, so the shelf gets the book the
-     * reader actually saw. Re-deriving it from the ISBN looks the edition up afresh and can return
-     * a different language - clicking "A Wizard of Earthsea" once stocked its Polish edition.
-     */
+    /** Stocks the exact search hit the member picked. Any member may add a book, not just staff. */
     @PostMapping(value = "/discover", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Add a book from the external catalogue to the library")
@@ -198,6 +180,7 @@ public class BookController extends PaginatedController {
             List<String> authors) {
     }
 
+    /** Flattens one catalogue hit into the JSON the picker renders. */
     private Map<String, Object> describeCandidate(CatalogCandidate candidate) {
         Map<String, Object> described = new HashMap<>();
         described.put("title", candidate.title());
@@ -209,11 +192,7 @@ public class BookController extends PaginatedController {
         return described;
     }
 
-    /**
-     * One search endpoint over several criteria. Every branch answers with a list of books - even
-     * the single-book ones - so the response has one shape instead of five, and misses are left to
-     * GlobalExceptionHandler rather than each returning its own bare string.
-     */
+    /** Searches by id, title, ISBN, author or free text. Always a list, so the shape never varies. */
     @GetMapping(produces = {"application/single-book-response+json;version=1", MediaType.APPLICATION_JSON_VALUE})
     @Operation(summary = "Search books by id, title, ISBN, author or free text")
     public ResponseEntity<List<Book>> getBook(
