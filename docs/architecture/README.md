@@ -6,7 +6,7 @@ it, and a browser client.
 | Component                                       | Role                                            | Port | Store          | Required? |
 | ----------------------------------------------- | ----------------------------------------------- | ---- | -------------- | --------- |
 | [Library backend](library-backend.md)           | Owns the catalogue, members, loans and identity | 9092 | H2 (file)      | yes       |
-| [Frontend](frontend.md)                         | React SPA, the only human-facing surface        | 5173 | —              | yes       |
+| [Frontend](frontend.md)                         | React SPA, the only human-facing surface        | 5174 | —              | yes       |
 | [Notification-Service](notification-service.md) | Sends and records notifications                 | 9093 | MySQL          | optional  |
 | [Analytics-Service](analytics-service.md)       | Counts what the library lends                   | 9095 | H2 (in-memory) | optional  |
 
@@ -14,7 +14,7 @@ it, and a browser client.
 
 ```mermaid
 flowchart LR
-    B["Browser<br/>React SPA :5173"]
+    B["Browser<br/>React SPA :5174"]
     L["Library backend<br/>:9092"]
     N["Notification-Service<br/>:9093"]
     K[("Kafka<br/>library.loans :9094")]
@@ -69,7 +69,7 @@ presenting those as fact would claim the library has never lent a book. See
 
 | Port | What                            |
 | ---- | ------------------------------- |
-| 5173 | Frontend dev server             |
+| 5174 | Frontend dev server             |
 | 9092 | Library backend                 |
 | 9093 | Notification-Service            |
 | 9094 | Kafka broker                    |

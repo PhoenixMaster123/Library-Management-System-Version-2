@@ -21,7 +21,7 @@ admin screen without a backend anywhere. The data is yours alone and stays in yo
 | Component                | Path                                         | Port       | Store          | Required? |
 | ------------------------ | -------------------------------------------- | ---------- | -------------- | --------- |
 | **Library backend**      | `Library-Management-System-Version-2/`       | 9092       | H2 (file)      | yes       |
-| **Frontend**             | `frontend/`                                  | 5173 (dev) | —              | yes       |
+| **Frontend**             | `frontend/`                                  | 5174 (dev) | —              | yes       |
 | **Notification-Service** | `Notification-Service/`                     | 9093       | MySQL          | optional  |
 | **Analytics-Service**    | `Analytics-Service/`                         | 9095       | H2 (in-memory) | optional  |
 
@@ -30,7 +30,7 @@ are absent. Borrowing a book still succeeds if Notification-Service is down or K
 
 ```mermaid
 flowchart LR
-    B[Browser<br/>React SPA :5173]
+    B[Browser<br/>React SPA :5174]
     L[Library backend<br/>Spring Boot :9092]
     N[Notification-Service<br/>:9093]
     K[(Kafka<br/>library.loans)]
@@ -47,7 +47,7 @@ flowchart LR
 
 | Port | What                            |
 | ---- | ------------------------------- |
-| 5173 | frontend dev server             |
+| 5174 | frontend dev server             |
 | 9092 | library backend (HTTP)          |
 | 9093 | Notification-Service (HTTP)     |
 | 9094 | Kafka broker                    |
@@ -130,7 +130,7 @@ instead, run with the `dev` profile:
 
 ```bash
 npm install
-npm run dev                  # http://localhost:5173
+npm run dev                  # http://localhost:5174
 ```
 
 ### Signing in

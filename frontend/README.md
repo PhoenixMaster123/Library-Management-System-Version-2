@@ -18,7 +18,7 @@ Then:
 
 ```bash
 npm install
-npm run dev                      # http://localhost:5173
+npm run dev                      # http://localhost:5174
 ```
 
 Sign in as the administrator the backend bootstraps at startup — **`admin` / `admin`** — or
@@ -30,7 +30,7 @@ bootstrap administrator is the only way into the admin screens. (Its password co
 
 | Command              | What it does                                                                                  |
 | -------------------- | --------------------------------------------------------------------------------------------- |
-| `npm run dev`        | Dev server with HMR on :5173                                                                  |
+| `npm run dev`        | Dev server with HMR on :5174                                                                  |
 | `npm run build`      | Type-check (`tsc`) then production build to `dist/`                                           |
 | `npm run preview`    | Serve the built `dist/` locally                                                               |
 | `npm test`           | Unit tests (Vitest + Testing Library), jsdom, no server needed                                |
@@ -44,7 +44,7 @@ ignore red suites.
 ## How it talks to the backend
 
 The backend has **no CORS configuration**, so the browser would block a direct call from
-:5173 to :9092. Instead `vite.config.ts` proxies everything under `/backend`:
+:5174 to :9092. Instead `vite.config.ts` proxies everything under `/backend`:
 
 ```
 browser → /backend/books/paginated → vite proxy → http://localhost:9092/books/paginated
