@@ -8,7 +8,8 @@ components — see the [root README](../README.md) for the whole picture.
 Needs a Kafka broker on **localhost:9094**.
 
 ```bash
-./mvnw spring-boot:run       # http://localhost:9095
+cd ..                                           # the repository root
+./mvnw -pl Analytics-Service spring-boot:run    # http://localhost:9095
 ```
 
 Without a broker the service still starts and simply never sees an event
@@ -78,5 +79,6 @@ rebuilt from the topic, so nothing here is a source of truth. The consumer reads
 ## Testing
 
 ```bash
-./mvnw test
+cd ..                             # the repository root
+./mvnw -pl Analytics-Service test
 ```

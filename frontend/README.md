@@ -10,8 +10,8 @@ This is one of four components — see the [root README](../README.md) for the w
 The backend must be running first:
 
 ```bash
-cd ../Library-Management-System-Version-2
-./mvnw spring-boot:run          # http://localhost:9092
+cd ..                                                            # the repository root
+./mvnw -pl Library-Management-System-Version-2 spring-boot:run    # http://localhost:9092
 ```
 
 Then:

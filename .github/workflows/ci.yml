@@ -22,23 +22,12 @@ env:
 
 jobs:
   java:
-    name: ${{ matrix.name }}
+    name: Java services
     runs-on: ubuntu-latest
     # The test report is published as a check run, which the read-only default token cannot create.
     permissions:
       contents: read
       checks: write
-    strategy:
-      # One service failing should not hide the state of the other two.
-      fail-fast: false
-      matrix:
-        include:
-          - name: Library backend
-            path: Library-Management-System-Version-2
-          - name: Notification-Service
-            path: Notification-Service/Notification-Service
-          - name: Analytics-Service
-            path: Analytics-Service
 
     steps:
       - uses: actions/checkout@v4
@@ -50,42 +39,44 @@ jobs:
           distribution: temurin
           cache: maven
 
-      # The wrappers are committed from Windows, which does not carry the executable bit, so a
-      # Linux runner would fail with "Permission denied" before Maven ever starts.
+      # The wrapper is committed from Windows, which does not carry the executable bit, so a Linux
+      # runner would fail with "Permission denied" before Maven ever starts.
       - name: Make the Maven wrapper executable
-        working-directory: ${{ matrix.path }}
         run: chmod +x ./mvnw
 
       # Checkstyle is bound to `validate`, so it would run inside `verify` anyway - but as its own
       # step a style failure is legible at a glance instead of buried in test output.
       - name: Checkstyle
-        working-directory: ${{ matrix.path }}
         run: ./mvnw -B --no-transfer-progress checkstyle:check
 
-      # `verify` runs unit tests (surefire), integration tests (failsafe) and PMD.
+      # One reactor build now covers all three services: `verify` runs unit tests (surefire),
+      # integration tests (failsafe) and PMD in every module, in dependency order.
+      #
+      # --fail-at-end keeps what the old three-way matrix gave us for free: the reactor finishes
+      # every module it still can rather than stopping at the first failure, so one red service
+      # does not hide the state of the other two.
       - name: Build and test
-        working-directory: ${{ matrix.path }}
-        run: ./mvnw -B --no-transfer-progress verify
+        run: ./mvnw -B --no-transfer-progress --fail-at-end verify
 
       - name: Publish test report
         # Reports are most wanted exactly when the previous step failed.
         if: always()
         uses: mikepenz/action-junit-report@v5
         with:
-          report_paths: ${{ matrix.path }}/target/*-reports/TEST-*.xml
-          check_name: Tests - ${{ matrix.name }}
+          report_paths: '**/target/*-reports/TEST-*.xml'
+          check_name: Tests - Java services
           fail_on_failure: true
 
       - name: Upload reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: reports-${{ strategy.job-index }}
+          name: java-reports
           path: |
-            ${{ matrix.path }}/target/surefire-reports/
-            ${{ matrix.path }}/target/failsafe-reports/
-            ${{ matrix.path }}/target/pmd.xml
-            ${{ matrix.path }}/target/checkstyle-result.xml
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+            **/target/pmd.xml
+            **/target/checkstyle-result.xml
           retention-days: 7
           if-no-files-found: ignore
 
@@ -148,11 +139,12 @@ jobs:
 
       # The dev profile seeds from the bundled JSON fixture; the default profile would reach out to
       # Open Library, which makes the suite depend on someone else's uptime.
+      # Run from the repository root and select the module: the wrapper lives at the root now, and
+      # the backend POM inherits from the root POM, so it cannot be built from its own directory.
       - name: Start the backend
-        working-directory: Library-Management-System-Version-2
         run: |
           chmod +x ./mvnw
-          ./mvnw -B --no-transfer-progress -DskipTests \
+          ./mvnw -B --no-transfer-progress -pl Library-Management-System-Version-2 -DskipTests \
             -Dcheckstyle.skip=true -Dpmd.skip=true \
             spring-boot:run -Dspring-boot.run.profiles=dev > backend.log 2>&1 &
           echo "started"
@@ -167,7 +159,7 @@ jobs:
             sleep 1
           done
           echo "backend did not start within 60s"
-          tail -50 Library-Management-System-Version-2/backend.log
+          tail -50 backend.log
           exit 1
 
       - name: Run Playwright
@@ -182,7 +174,7 @@ jobs:
           path: |
             frontend/playwright-report/
             frontend/test-results/
-            Library-Management-System-Version-2/backend.log
+            backend.log
           retention-days: 7
           if-no-files-found: ignore
 

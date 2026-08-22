@@ -10,8 +10,8 @@ The Maven project is one level down, in `Notification-Service/`.
 Needs MySQL on **localhost:3306**; the schema `notification_service` is created on connect.
 
 ```bash
-cd Notification-Service
-./mvnw spring-boot:run       # http://localhost:9093
+cd ..                                              # the repository root
+./mvnw -pl Notification-Service spring-boot:run     # http://localhost:9093
 ```
 
 It is optional: the library calls it over OpenFeign with short timeouts (2s connect, 3s read) and
@@ -64,6 +64,6 @@ attempt:
 ## Testing
 
 ```bash
-cd Notification-Service
-./mvnw test
+cd ..                                # the repository root
+./mvnw -pl Notification-Service test
 ```

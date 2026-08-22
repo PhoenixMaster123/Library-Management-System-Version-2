@@ -16,8 +16,9 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Seeded from localStorage so a page refresh keeps you signed in and renders the
-  // right navigation immediately; the token is re-checked against the API below.
+  // Seeded from sessionStorage so a refresh in the same tab keeps you signed in and renders the
+  // right navigation immediately; the token is re-checked against the API below. A new tab has no
+  // session storage of its own, so it starts at the login page.
   const [session, setSessionState] = useState<Session | null>(() =>
     getToken() ? getSession() : null,
   )

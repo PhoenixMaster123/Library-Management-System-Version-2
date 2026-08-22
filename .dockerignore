@@ -1,0 +1,23 @@
+# The build context is now the repository root - every service image is built from here, with
+# `dockerfile:` naming the module (see docker-compose.yml). Keep the context to source: anything
+# else is either useless in an image or a leak.
+.git/
+.github/
+.idea/
+*.iml
+
+# Build output, from every module.
+target/
+*/target/
+.mvn/wrapper/maven-wrapper.jar
+
+# The frontend is not in any service image; node_modules alone would dwarf the context.
+frontend/
+
+# Docs and local state.
+docs/
+*.md
+*.log
+.env
+.env.*
+data/

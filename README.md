@@ -22,7 +22,7 @@ admin screen without a backend anywhere. The data is yours alone and stays in yo
 | ------------------------ | -------------------------------------------- | ---------- | -------------- | --------- |
 | **Library backend**      | `Library-Management-System-Version-2/`       | 9092       | H2 (file)      | yes       |
 | **Frontend**             | `frontend/`                                  | 5173 (dev) | —              | yes       |
-| **Notification-Service** | `Notification-Service/Notification-Service/` | 9093       | MySQL          | optional  |
+| **Notification-Service** | `Notification-Service/`                     | 9093       | MySQL          | optional  |
 | **Analytics-Service**    | `Analytics-Service/`                         | 9095       | H2 (in-memory) | optional  |
 
 Both supporting services are genuinely optional: the backend degrades rather than fails when they
@@ -103,7 +103,7 @@ the point at which to move to Postgres or MySQL.
 ## Prerequisites
 
 - JDK 21
-- Maven 3.9.9 (or the bundled `mvnw` wrappers)
+- Maven 3.9.11 (or the bundled `mvnw` wrapper at the repository root)
 - Node.js with npm — frontend only
 - MySQL — Notification-Service only
 - Kafka — Analytics-Service only
@@ -112,10 +112,10 @@ the point at which to move to Postgres or MySQL.
 
 Backend and frontend are enough to run the whole application.
 
-**1. Backend** — from `Library-Management-System-Version-2/`:
+**1. Backend** — from the repository root:
 
 ```bash
-./mvnw spring-boot:run       # http://localhost:9092
+./mvnw -pl Library-Management-System-Version-2 spring-boot:run    # http://localhost:9092
 ```
 
 On first start with an empty catalogue the backend stocks itself from Open Library
@@ -123,7 +123,7 @@ On first start with an empty catalogue the backend stocks itself from Open Libra
 instead, run with the `dev` profile:
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+./mvnw -pl Library-Management-System-Version-2 spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 **2. Frontend** — from `frontend/`:
@@ -154,10 +154,10 @@ effect at all.
 
 ### Optional services
 
-**Notification-Service** — needs MySQL on 3306. From `Notification-Service/Notification-Service/`:
+**Notification-Service** — needs MySQL on 3306. From the repository root:
 
 ```bash
-./mvnw spring-boot:run       # http://localhost:9093
+./mvnw -pl Notification-Service spring-boot:run    # http://localhost:9093
 ```
 
 Email delivery is off by default (`notification.mail.enabled=false`): notifications are still
@@ -166,10 +166,10 @@ real mail, fill in `spring.mail.username` / `spring.mail.password` and flip the 
 
 **Analytics-Service** — needs a Kafka broker on 9094. It consumes `library.loans` and rebuilds
 book statistics from the topic, so its H2 store is a projection rather than a source of truth and
-can be thrown away. From `Analytics-Service/`:
+can be thrown away. From the repository root:
 
 ```bash
-./mvnw spring-boot:run       # http://localhost:9095
+./mvnw -pl Analytics-Service spring-boot:run       # http://localhost:9095
 ```
 
 | Endpoint                                       | Returns                 |
@@ -200,13 +200,15 @@ there. Switch to `redis` once one is.
 
 ## Testing
 
-From `Library-Management-System-Version-2/`:
+From the repository root, where one reactor build covers all three services:
 
 ```bash
-./mvnw test                          # 118 unit tests, ~1 min
-./mvnw verify                        # those plus 143 integration tests, ~3.5 min
-./mvnw -f pom-docker.xml verify      # integration tests against Docker
+./mvnw test      # 118 unit tests, ~1 min
+./mvnw verify    # those plus 143 integration tests, ~3.5 min
 ```
+
+Add `-pl <module>` to build one service on its own, for example
+`./mvnw -pl Analytics-Service verify`.
 
 Two plugins split the work by filename: **surefire** runs `*Test` at the `test` phase, **failsafe**
 runs `*IT` at `integration-test`. The suffix is the whole mechanism — a new integration test is
@@ -260,14 +262,14 @@ bodies on some routes, and identifier fields named `bookId` / `customerId` rathe
 
 | Job                  | What it does                                                                                            |
 | -------------------- | ------------------------------------------------------------------------------------------------------- |
-| **java** (matrix ×3) | Checkstyle, then `mvnw verify` — unit tests, integration tests and PMD — for each of the three services |
+| **java**             | Checkstyle, then one `mvnw verify` over the whole reactor — unit tests, integration tests and PMD for all three services |
 | **frontend**         | `npm ci`, type-check, unit tests, production build                                                      |
 | **e2e**              | Starts the backend, then drives Chromium through the Playwright suite                                   |
 | **pages**            | On `main` only: builds the frontend and publishes it to GitHub Pages                                    |
 
 All three services are built on every change, not only the one that changed: they share a Kafka
 topic and an HTTP contract, so a change to one can break another without touching its files. The
-matrix runs with `fail-fast: false` so one red service does not hide the state of the other two.
+reactor runs with `--fail-at-end` so one red service does not hide the state of the other two.
 
 Test reports are published to the run summary, and on failure the surefire/failsafe reports, PMD
 and Checkstyle XML, and the Playwright trace are uploaded as artifacts.

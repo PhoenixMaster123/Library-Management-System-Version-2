@@ -118,20 +118,22 @@ Write-Host ''
 
 $profileArg = if ($Seed) { '' } else { ' "-Dspring-boot.run.profiles=dev"' }
 
+# All three run from the repository root with -pl: there is one Maven wrapper now, at the root, and
+# each service inherits from the root POM, so none of them can be built from its own directory.
 Start-LibraryService -Name 'Library backend' -Port 9092 `
-    -Directory (Join-Path $root 'Library-Management-System-Version-2') `
-    -Command "./mvnw spring-boot:run$profileArg"
+    -Directory $root `
+    -Command "./mvnw -pl Library-Management-System-Version-2 spring-boot:run$profileArg"
 
 if ($Notifications) {
     Start-LibraryService -Name 'Notification-Service' -Port 9093 `
-        -Directory (Join-Path $root 'Notification-Service\Notification-Service') `
-        -Command './mvnw spring-boot:run'
+        -Directory $root `
+        -Command './mvnw -pl Notification-Service spring-boot:run'
 }
 
 if ($Analytics) {
     Start-LibraryService -Name 'Analytics-Service' -Port 9095 `
-        -Directory (Join-Path $root 'Analytics-Service') `
-        -Command './mvnw spring-boot:run'
+        -Directory $root `
+        -Command './mvnw -pl Analytics-Service spring-boot:run'
 }
 
 Start-LibraryService -Name 'Frontend' -Port 5173 `

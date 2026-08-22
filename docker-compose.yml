@@ -19,9 +19,13 @@ x-hardening: &hardening
   restart: unless-stopped
 
 services:
+  # Every service image is built from the repository root, with `dockerfile:` naming the module.
+  # The modules inherit from the root POM, so a context of just the module directory no longer
+  # holds enough for Maven to resolve the build. .dockerignore keeps that wider context small.
   backend:
     build:
-      context: ./Library-Management-System-Version-2
+      context: .
+      dockerfile: Library-Management-System-Version-2/Dockerfile
     <<: *hardening
     # The only port on the host. Bound to localhost: put a TLS-terminating reverse proxy in front
     # rather than exposing the application directly.
@@ -50,7 +54,8 @@ services:
 
   notification:
     build:
-      context: ./Notification-Service/Notification-Service
+      context: .
+      dockerfile: Notification-Service/Dockerfile
     <<: *hardening
     # No ports: this service has no authentication of its own and trusts the userId it is given,
     # so it must never be reachable from outside this network.
@@ -72,7 +77,8 @@ services:
 
   analytics:
     build:
-      context: ./Analytics-Service
+      context: .
+      dockerfile: Analytics-Service/Dockerfile
     <<: *hardening
     # Also unauthenticated: the backend proxies it behind its own admin check.
     expose: ["9095"]

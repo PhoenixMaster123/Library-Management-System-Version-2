@@ -1,16 +1,25 @@
 # ---- build ------------------------------------------------------------------------------------
 # The JDK, Maven and the source tree stay in this stage; none of it reaches the image that runs.
+#
+# The build context is the repository root, not this directory - see docker-compose.yml. Since the
+# parent POM arrived, a module cannot be built on its own: it inherits from the root POM, and Maven
+# loads every module named in <modules> before pruning the reactor to the one being built. So all
+# four POMs are copied, and only this module's sources.
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 
-# Dependencies first, so a source-only change does not re-download the world.
+# POMs first, so a source-only change does not re-download the world.
 COPY pom.xml .
-RUN mvn -B -q dependency:go-offline
+COPY Library-Management-System-Version-2/pom.xml Library-Management-System-Version-2/
+COPY Notification-Service/pom.xml Notification-Service/
+COPY Analytics-Service/pom.xml Analytics-Service/
+RUN mvn -B -q -pl Analytics-Service -am dependency:go-offline
 
-COPY src ./src
+COPY Analytics-Service/src ./Analytics-Service/src
 # Checkstyle, PMD and the tests run in CI; repeating them here only makes images slow to build.
-RUN mvn -B -q clean package -DskipTests -Dcheckstyle.skip=true -Dpmd.skip=true \
-    && mv target/*.jar /build/app.jar
+RUN mvn -B -q -pl Analytics-Service -am clean package \
+        -DskipTests -Dcheckstyle.skip=true -Dpmd.skip=true \
+    && mv Analytics-Service/target/*.jar /build/app.jar
 
 # ---- run --------------------------------------------------------------------------------------
 FROM eclipse-temurin:21-jre-alpine AS runtime
